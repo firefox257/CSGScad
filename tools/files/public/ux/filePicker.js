@@ -12,7 +12,6 @@ import {
 } from './filePickerUI.js';
 
 // --- Module-level Variables ---
-// (No need for stylesInjected here, it's in filePickerUI.js)
 let currentPath = '/';
 let clipboard = { type: null, paths: [] };
 let _onFilePickHandler = null;
@@ -74,11 +73,12 @@ function setupFilePickerInstance(originalElement = null) {
     const pasteButton = pickerContainer.querySelector('.paste-btn');
     const deleteButton = pickerContainer.querySelector('.delete-btn');
     
-    // --- DOWNLOAD BUTTON ADDITION ---
+    // --- DOWNLOAD/UPLOAD BUTTON ADDITION ---
+    // Note: The icon and title will be set dynamically in updateButtonStates
     const downloadButton = document.createElement('button');
     downloadButton.className = 'download-btn';
-    downloadButton.title = 'Download Selected File';
-    downloadButton.textContent = '📥';
+    downloadButton.title = 'Download/Upload'; 
+    downloadButton.textContent = '🔄'; // Placeholder icon
     
     // Inject the download button into the menu bar's table row (after delete)
     const menuRow = pickerContainer.querySelector('.file-picker-menu-bar tbody tr');
@@ -90,7 +90,7 @@ function setupFilePickerInstance(originalElement = null) {
         const cancelButtonCell = pickerContainer.querySelector('.cancel-btn').closest('td');
         menuRow.insertBefore(downloadCell, cancelButtonCell);
     }
-    // --- END DOWNLOAD BUTTON ADDITION ---
+    // --- END DOWNLOAD/UPLOAD BUTTON ADDITION ---
 
     const cancelButton = pickerContainer.querySelector('.cancel-btn');
     const usePathButton = pickerContainer.querySelector('.use-path-btn');
@@ -213,10 +213,20 @@ function setupFilePickerInstance(originalElement = null) {
         deleteButton.disabled = !hasSelection;
         renameButton.disabled = !isSingleSelection;
         
-        // Download button logic: only enabled for a single file selection
+        // Download/Upload button logic:
         const isSingleFileSelection = isSingleSelection && 
             fileListTbody.querySelector(`.file-checkbox[data-path="${instanceSelectedFilePath}"]`)?.closest('tr')?.dataset.type === 'file';
-        downloadButton.disabled = !isSingleFileSelection; 
+        
+        // DUAL FUNCTIONALITY LOGIC
+        if (isSingleFileSelection) {
+            downloadButton.textContent = '📥'; // Download Icon
+            downloadButton.title = 'Download Selected File';
+            downloadButton.disabled = false;
+        } else {
+            downloadButton.textContent = '⬆️'; // Upload Icon
+            downloadButton.title = 'Upload File to Current Directory';
+            downloadButton.disabled = false; // Always enabled for upload
+        }
         
         pasteButton.disabled = instanceClipboard.type === null || instanceClipboard.paths.length === 0;
 
@@ -570,11 +580,8 @@ function setupFilePickerInstance(originalElement = null) {
      * Handles downloading the selected file.
      */
     const handleDownload = async () => {
-        if (!instanceSelectedFilePath || instanceSelectedFileType !== 'file') {
-            showPopupMessage("Please select a single file to download.", true);
-            return;
-        }
-
+        // This function is only called if a single file is selected (checked in handleDownloadOrUpload)
+        
         showPopupMessage(`Starting download for ${instanceSelectedFilePath.split('/').pop()}...`);
 
         try {
@@ -608,6 +615,71 @@ function setupFilePickerInstance(originalElement = null) {
             showPopupMessage(`Download failed: ${error.message}`, true);
         }
     };
+    
+    /**
+     * Handles file upload when no file is selected.
+     * Uses a temporary hidden input to prompt the user for a file.
+     */
+    const handleUpload = () => {
+        // Create a temporary hidden file input
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.style.display = 'none';
+        
+        // Listen for when a file is selected
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) {
+                // User cancelled file selection
+                document.body.removeChild(fileInput);
+                return;
+            }
+
+            const destinationPath = instanceCurrentPath.endsWith('/') ? instanceCurrentPath : instanceCurrentPath + '/';
+            const fullPath = destinationPath + file.name;
+
+            showPopupMessage(`Uploading '${file.name}'...`);
+
+            try {
+                // Read the file content
+                // Note: file.text() is used assuming the server primarily handles text/plain or JSON content.
+                // For large files or non-text files, this should be adjusted to read as ArrayBuffer.
+                const fileContent = await file.text(); 
+                
+                // Save the file content to the server
+                await api.saveFile(fullPath, fileContent);
+
+                showPopupMessage(`File '${file.name}' uploaded successfully.`);
+                renderFileList(instanceCurrentPath); // Refresh the list
+            } catch (error) {
+                console.error("Error during file upload:", error);
+                showPopupMessage(`Upload failed for '${file.name}': ${error.message}`, true);
+            } finally {
+                // Clean up the temporary input
+                document.body.removeChild(fileInput);
+            }
+        });
+
+        // Add to DOM and trigger the file selection dialog
+        document.body.appendChild(fileInput);
+        fileInput.click();
+    };
+    
+    /**
+     * Handles downloading the selected file OR initiates upload if nothing is selected.
+     */
+    const handleDownloadOrUpload = (e) => {
+        const selectedCheckboxes = fileListTbody.querySelectorAll('.file-checkbox:checked');
+        const isSingleFileSelected = selectedCheckboxes.length === 1 && 
+            fileListTbody.querySelector(`.file-checkbox[data-path="${instanceSelectedFilePath}"]`)?.closest('tr')?.dataset.type === 'file';
+
+        if (isSingleFileSelected) {
+            handleDownload(e); // Existing download logic
+        } else {
+            handleUpload(); // New upload logic
+        }
+    };
+
 
     // Handle "Use File Path" operation
     const handleUsePath = (e) => {
@@ -670,7 +742,8 @@ function setupFilePickerInstance(originalElement = null) {
     cutButton.addEventListener('click', handleCut);
     pasteButton.addEventListener('click', handlePaste);
     deleteButton.addEventListener('click', handleDelete);
-    downloadButton.addEventListener('click', handleDownload); // Add download listener
+    // Use the dual-functionality handler
+    downloadButton.addEventListener('click', handleDownloadOrUpload); 
     refreshButton.addEventListener('click', () => renderFileList(instanceCurrentPath));
     cancelButton.addEventListener('click', handleCancel);
     usePathButton.addEventListener('click', handleUsePath);

@@ -1749,7 +1749,10 @@ function linePaths3d(target, commandPath, close) {
 
         extrudePath.add(new THREE.LineCurve3(startVector, endVector))
     }
-
+	//if (close && points3d.length > 6) {
+		//extrudePath.closePath();
+	//}
+	/*
     // Add a closing segment if the 'close' parameter is true
     if (close && points3d.length > 6) {
         const startPointIndex = points3d.length - 3
@@ -1767,14 +1770,17 @@ function linePaths3d(target, commandPath, close) {
         )
 
         extrudePath.add(new THREE.LineCurve3(startVector, endVector))
-    }
+    }//*/
 
     const numPoints = points3d.length / 3
 
     const extrudeSettings = {
-        steps: close ? numPoints : numPoints - 1,
+        //steps: close ? numPoints : numPoints - 1,
+		steps:numPoints-1,
         bevelEnabled: false,
-        extrudePath: extrudePath
+        extrudePath: extrudePath, 
+		capStart:false,
+		capEnd:false
     }
 
     // --- Mesh Creation Loop (Applying Shape Rotation) ---
