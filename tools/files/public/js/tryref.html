@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Blob Script Stack Trace Demo</title>
+    </head>
+    <body>
+        <h1>Blob Script Stack Trace Demo</h1>
+        <p>
+            Watch for the alert box. The stack trace should reference a `blob:`
+            URL.
+        </p>
+
+        <script>
+		/**
+ * Generates a standard UUID (Universally Unique Identifier) version 4.
+ * This is the modern, secure way to get a GUID in browser JavaScript.
+ */
+
+globalThis.guid = (() => {
+    // 1. Check for the native, secure, and standard method.
+    if (typeof window.crypto?.randomUUID === 'function') {
+        // Return the function itself (which will be assigned to globalThis.guid)
+        return window.crypto.randomUUID.bind(window.crypto); // Bind it for safety
+    } else {
+        // 2. Fallback to the insecure, older method.
+        return function () {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(
+                /[xy]/g,
+                function (c) {
+                    // Use Math.random and bitwise operators for hex value generation
+                    const r = (Math.random() * 16) | 0;
+                    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+                    return v.toString(16);
+                }
+            );
+        };
+    }
+})();
+
+// How to use it:
+// const newGuid = globalThis.guid(); 
+// console.log(newGuid); 
+
+
+
+// Assuming globalThis.Guid is defined and accessible as a function:
+// const Guid = globalThis.Guid; 
+
+globalThis.___blobfunctions = globalThis.___blobfunctions || {};
+
+/**
+ * Creates and returns an async function that, when called, executes the 
+ * provided codeString within a dynamically injected Blob script and cleans up.
+ * * @param {string} codeString The JavaScript code to execute.
+ * @returns {function(): Promise<void>} An async function that runs the code.
+ */
+globalThis.blobFunction =  async function (codeString) 
+{
+	
+	var gid=guid();
+	
+	var params = ["bla","bla2","bla3"];
+	
+	var code =`___blobfunctions['${gid}'] =  function(${params.join(",")}){${codeString}}
+	`;
+	
+	alert(code);
+	
+	// 2. Convert the string code into a Blob of type 'text/javascript'
+	const codeBlob = new Blob([code], { type: 'text/javascript' })
+	// 3. Create a blob: URL for the Blob
+	const blobUrl = URL.createObjectURL(codeBlob)
+	// 4. Dynamically create a <script> tag
+	const scriptElement = document.createElement('script')
+	scriptElement.src = blobUrl
+	// 5. ATTACH THE CLEANUP HANDLER
+	// The 'onload' event fires after the script has been executed.
+	scriptElement.onload = function () {
+		//console.log('Script execution finished. Starting cleanup...')
+		// a. Revoke the blob URL to free up the associated memory.
+		URL.revokeObjectURL(blobUrl)
+		// b. Remove the script element from the DOM.
+		// Check if the parentNode exists before attempting to remove.
+		if (scriptElement.parentNode) {
+			scriptElement.parentNode.removeChild(scriptElement)
+			//console.log('Script element removed from DOM.')
+		}
+		try {
+			 ___blobfunctions[gid]();
+			 delete ___blobfunctions[gid];
+			 
+		} catch (e) {
+			console.log('hereStack Trace from Blob Script:\\n\\n' + e.stack)
+			alert(e.message)
+		}
+	}
+	// Handle errors in loading the script (though rare for a blob URL)
+	scriptElement.onerror = function () {
+		console.error(
+		'Error loading the Blob script. Starting cleanup...'
+		)
+		// Still try to clean up the URL and the element even if an error occurs.
+		URL.revokeObjectURL(blobUrl)
+		if (scriptElement.parentNode) {
+		scriptElement.parentNode.removeChild(scriptElement)
+		}
+	}
+	// 6. Append the script to the document body to trigger execution
+	document.body.appendChild(scriptElement)
+
+	
+}
+
+ 
+blobFunction(`alert(1); 
+bbb(); 
+return 1;`);
+alert(3)
+
+        </script>
+    </body>
+</html>

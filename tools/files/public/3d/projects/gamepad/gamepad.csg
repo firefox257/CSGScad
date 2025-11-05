@@ -1,0 +1,35 @@
+{
+  "csgCode": [
+    {
+      "title": "Work on",
+      "content": "\n\nvar f1=await font(\"/fonts/ClassicRomanCaps.ttf\");\n\nvar textPath=text({\n\t\tfont:f1,\n\t\ttext:\"hELLO\",\n\t\tfontSize:10,\n\t\tfn:20\n\t});\nvar s=shape(textPath);\n\nvar tv= linePaths3d(s, {\n\t\tpath:[\"m\", 0,-20,0,\"l\", 0,-15,15]\n\t});\n\n\nvar s=shape(rotatePath(0,{\n\t\t\tpath:[\n\t\t\t\t\"m\", 0,0,\n\t\t\t\t\"l\",0,20,\n\t\t\t\t\"l\",10,10,\n\t\t\t\t\"l\",0,0\n\t\t\t],\n\t\t\tfn:100\n\t\t}));\n\nvar v= rotate([0,0,0],linePaths3d(s, {\n\t\t\tpath:[\n\t\t\t\t\"m\", 0,0,0,\n\t\t\t\t\"lr\",10,0,0,\n\t\t\t\t\"lr\", 20,20,0,\n\t\t\t\t\"qr\", 0,10,0, -10,10,0 ,\n\t\t\t\t\"lr\", -30,0,0\n\n\t\t\t],\n\t\t\tfn:30\n\n\t\t}));\nreturn [v, tv];\n\n\n\n\n\n\n\n\n"
+    },
+    {
+      "title": "Case Left",
+      "content": "\n\n\n\nvar height=3 *inch;\n\n\nvar top =shape({\n\t\tpath:[\n\t\t\t\"m\", 0, 0,\n\t\t\t\"l\" -inch, 0,\n\t\t\t\"q\", -2*inch, 0, -2*inch, inch,\n\t\t\t\"l\", -2*inch, 2*inch,\n\t\t\t\"q\", -2*inch, 3*inch, -1*inch, 3*inch,\n\t\t\t\"l\", 0, 3*inch,\n\t\t\t\"l\", 0,0\n\t\t],\n\t\tfn:100});\n\n\nvar plate= path3d([\n\t\t\t\"m\",0,0,0,\n\t\t\t\"l\", 0,0,inch\n\t\t], 100);\nreturn linePaths3d(top, plate);\n\n\n\n\n\n\n\n\n\n\n\n"
+    },
+    {
+      "title": "test press button",
+      "content": "\n\n/*\n\n{\n\tw:width,\n\tl:length,\n\th:height,\n\ts: spring thick,\n\to:over header miunt height\n}\n\n*/\nfunction buttonMech(o)\n{\n\tvar springPath ={\n\t\tpath:[\n\t\t\t\"m\", 0,0,\n\t\t\t\"lr\", 1,1,\n\t\t\t\"lr\", -1,1,\n\t\t\t\"lr\",0.5,0,\n\t\t\t\"lr\", 1,-1,\n\t\t\t\"lr\", -1,-1,\n\t\t\t\"lr\", -0.5,0\n\t\t]\n\t}\n\n\n\n}\n\n\n\nreturn floor(cube([10,10,10]));"
+    },
+    {
+      "title": "cabel test small",
+      "content": "\n\nfunction twire(params)\n{\n\tvar p= {\n\t\twidth:0.4,// 3d printed line width.\n\t\twire:0.1,//wire diameter,\n\t\tcount:2,\n\t\tpitch:0.5\n\n\t};\n\n\tfor(const i in params){\n\t\tp[i]=params[i];\n\t}\n\n\tvar dia=p.wire;\n\tvar rad=p.wire/2;\n\n\n\tvar pa= [];\n\tfor(var i=0; i< p.count;i++)\n\t{\n\t\tpa.push(\n\t\t\t\"m\", (p.width+dia)*i, 0,\n\t\t\t\"xr\", -rad, rad, 0, dia,\n\t\t\t\"xr\", rad, -rad, 0, -dia\n\t\t);\n\n\t}\n\n\n\n\tvar ps=shape(alignPath({cx:0,cy:0},{\n\t\t\tpath:pa,\n\t\t\tfn:10\n\t\t}));\n\n\n\n\n\treturn linePaths3d(ps, {\n\t\t\tpath:[\"m\", 0,0,0,\n\t\t\t\t\"lr\", 0,10,0,\n\t\t\t\t\"qr\",0,5, 0, 5,5,0,\n\t\t\t\t\"lr\", 5,0,0\n\t\t\t],\n\t\t\tfn:50\n\t\t});\n\n}\n\n\n\nreturn twire({count:8});\n\n\n\n\n\n\n\n\n\n"
+    },
+    {
+      "title": "Untitled 5",
+      "content": "\n\n\n\nvar c1=color(0xff00ff00, cube([10,10,10]));\n\nvar c2 =cube([10,10,10]);\n\n\n placement({\n\t\tccx:0,\n\t\tccy:0,\n\t\ttbz:0\n\t\t}, c2, c1);\n\nreturn [c2,c1];\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    },
+    {
+      "title": "Untitled 6",
+      "content": ""
+    }
+  ],
+  "editorCode": [
+    {
+      "title": "Editor Script",
+      "content": "// Place reusable functions and objects here. // Access from\n                    CSG Script with include(\"page name\"); /* var constants = {\n                    PI: Math.PI, E: Math.E }; return { constants }; */"
+    }
+  ],
+  "meshCache": {}
+}
