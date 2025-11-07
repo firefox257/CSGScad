@@ -489,9 +489,13 @@
                 camera.position.set(0, 50, 50)
                 camera.lookAt(0, 0, 0)
 
-                controls = new OrbitControls(camera, canvas)
-                controls.enableDamping = true
-                controls.dampingFactor = 0.1
+                controls = new OrbitControls(camera, canvas);
+                controls.enableDamping = true;
+                controls.dampingFactor = 0.1;
+				controls.minDistance = 0.1;
+				controls.rotateSpeed=0.3
+
+                
 
                 keyLight = new THREE.PointLight(0xffffff, 7, 1000, 0.2)
                 ambientLight = new THREE.AmbientLight(0xffcc66, 0.5)

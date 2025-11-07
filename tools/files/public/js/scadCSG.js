@@ -80,14 +80,15 @@ function $path(filepath) {
  * @param {...any} args - Additional arguments to pass to the applyFunction.
  */
 const applyFilter = (item, checkFunction, applyFunction, ...args) => {
-	
-	// Case 1: The item is a single mesh (THREE.Mesh or Brush)
+    // Case 1: The item is a single mesh (THREE.Mesh or Brush)
     if (checkFunction(item)) {
-        applyFunction(item, ...args);
+        applyFunction(item, ...args)
     }
     // Case 2: The item is an array. Recursively process each element.
     else if (Array.isArray(item)) {
-        item.forEach((subItem) => applyFilter(subItem, checkFunction, applyFunction, ...args))
+        item.forEach((subItem) =>
+            applyFilter(subItem, checkFunction, applyFunction, ...args)
+        )
     }
     // Case 3: The item is a generic object. Recursively process its properties,
     // EXCLUDING functions, getters, and setters.
@@ -95,18 +96,17 @@ const applyFilter = (item, checkFunction, applyFunction, ...args) => {
         for (const key in item) {
             // 1. Check if the property is directly on the object (not inherited)
             if (Object.prototype.hasOwnProperty.call(item, key)) {
-
-                const descriptor = Object.getOwnPropertyDescriptor(item, key);
+                const descriptor = Object.getOwnPropertyDescriptor(item, key)
 
                 // 2. Check to exclude functions
                 if (typeof item[key] === 'function') {
-                    continue; // Skip function properties
+                    continue // Skip function properties
                 }
-                
+
                 // 3. Check to exclude getters and setters (accessor properties)
                 // If 'descriptor' exists, check if it has a 'get' or 'set' function defined.
                 if (descriptor && (descriptor.get || descriptor.set)) {
-                    continue; // Skip getter/setter properties
+                    continue // Skip getter/setter properties
                 }
 
                 // If it passes all checks, continue recursion
@@ -116,7 +116,6 @@ const applyFilter = (item, checkFunction, applyFunction, ...args) => {
     }
     // All other data types (strings, numbers, etc.) are ignored.
 }
-
 
 function isMesh(item) {
     return item && (item instanceof THREE.Mesh || item instanceof Brush)
@@ -337,18 +336,18 @@ function align(config = {}, target) {
 
         const offset = new THREE.Vector3()
 
-        if (config.bx !== undefined) {
-            offset.x = config.bx - bbox.min.x
-        } else if (config.tx !== undefined) {
-            offset.x = config.tx - bbox.max.x
+        if (config.lx !== undefined) {
+            offset.x = config.lx - bbox.min.x
+        } else if (config.rx !== undefined) {
+            offset.x = config.rx - bbox.max.x
         } else if (config.cx !== undefined) {
             offset.x = config.cx - center.x
         }
 
-        if (config.by !== undefined) {
-            offset.z = config.by - bbox.min.z
-        } else if (config.ty !== undefined) {
-            offset.z = config.ty - bbox.max.z
+        if (config.uy !== undefined) {
+            offset.z = config.uy - bbox.min.z
+        } else if (config.dy !== undefined) {
+            offset.z = config.dy - bbox.max.z
         } else if (config.cy !== undefined) {
             offset.z = config.cy - center.z
         }
@@ -968,7 +967,7 @@ function path3d(path) {
                     cp[1] + paths[i + 6],
                     cp[2] + paths[i + 5]
                 ]
-				
+
                 const segmentsToUse = atn > 1 ? atn : fn || 16
 
                 getArcSegmentPoints3D(
@@ -1662,7 +1661,7 @@ function arcPath3d(config) {
 
 function linePaths3d(target, commandPath, close) {
     var path = path3d(commandPath)
-	//PrintLog(JSON.stringify(path));
+    //PrintLog(JSON.stringify(path));
     // This part of the code is not being modified, but it's included for context
     var shapes = []
     applyToShape(target, (item) => {
@@ -1749,10 +1748,10 @@ function linePaths3d(target, commandPath, close) {
 
         extrudePath.add(new THREE.LineCurve3(startVector, endVector))
     }
-	//if (close && points3d.length > 6) {
-		//extrudePath.closePath();
-	//}
-	/*
+    //if (close && points3d.length > 6) {
+    //extrudePath.closePath();
+    //}
+    /*
     // Add a closing segment if the 'close' parameter is true
     if (close && points3d.length > 6) {
         const startPointIndex = points3d.length - 3
@@ -1776,11 +1775,11 @@ function linePaths3d(target, commandPath, close) {
 
     const extrudeSettings = {
         //steps: close ? numPoints : numPoints - 1,
-		steps:numPoints-1,
+        steps: numPoints - 1,
         bevelEnabled: false,
-        extrudePath: extrudePath, 
-		capStart:false,
-		capEnd:false
+        extrudePath: extrudePath,
+        capStart: false,
+        capEnd: false
     }
 
     // --- Mesh Creation Loop (Applying Shape Rotation) ---
@@ -1828,8 +1827,8 @@ function linePaths3d(target, commandPath, close) {
         const sp = mesh.geometry.attributes.position
         for (var i = 0; i < sp.count; i++) {
             var yindex = sp.getY(i)
-			//PrintLog("i"+i)
-			
+            //PrintLog("i"+i)
+
             //PrintLog('yindez:' + yindex)
             // Get the local cross-section coordinates from the extruded geometry.
             var x = sp.getX(i)
@@ -1896,7 +1895,6 @@ function union(...target) {
     applyToMesh(target, (item) => {
         meshes.push(item)
     })
-    
 
     if (meshes.length === 0) return null
     if (meshes.length === 1) return meshes[0]
@@ -2242,58 +2240,52 @@ function boundingBox(...target) {
     }
 }
 
-
-
-
-
-
-
-
 /**
- * Calculates the bounding box of a path by first flattening curves 
+ * Calculates the bounding box of a path by first flattening curves
  * into line segments using path2d.
  * * @param {object} pathObject - An object with {path: Array, fn: number}.
  * @returns {object} An object containing the min and max {x, y} coordinates.
  */
 function boundingBoxPath(pathObject) {
     // 1. Flatten the path using path2d to ensure all segments are 'm' or 'l'
-    const { path: flattenedPath } = path2d(pathObject);
-    
+    const { path: flattenedPath } = path2d(pathObject)
+
     // Initialize min/max values
-    let minX = Infinity;
-    let minY = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
+    let minX = Infinity
+    let minY = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
 
     // 2. Iterate through the flattened path
-    let i = 0;
+    let i = 0
     while (i < flattenedPath.length) {
-        const command = flattenedPath[i];
-        i++;
+        const command = flattenedPath[i]
+        i++
 
         if (command === 'm' || command === 'l') {
-            const x = flattenedPath[i];
-            const y = flattenedPath[i + 1];
+            const x = flattenedPath[i]
+            const y = flattenedPath[i + 1]
 
             // Update min/max
-            minX = Math.min(minX, x);
-            minY = Math.min(minY, y);
-            maxX = Math.max(maxX, x);
-            maxY = Math.max(maxY, y);
+            minX = Math.min(minX, x)
+            minY = Math.min(minY, y)
+            maxX = Math.max(maxX, x)
+            maxY = Math.max(maxY, y)
 
-            i += 2;
+            i += 2
         } else if (command === 'n' || command === 'r' || command === 's') {
             // Skip non-coordinate commands (n: 1 arg, r: 1 arg, s: 2 args)
-            const numArgs = command === 'n' || command === 'r' ? 1 : command === 's' ? 2 : 0;
-            i += numArgs;
+            const numArgs =
+                command === 'n' || command === 'r' ? 1 : command === 's' ? 2 : 0
+            i += numArgs
         } else {
-            // Since path2d should only return 'm', 'l', 'n', 'r', 's', 
-            // any other command here is an error or a command with arguments 
+            // Since path2d should only return 'm', 'l', 'n', 'r', 's',
+            // any other command here is an error or a command with arguments
             // that path2d failed to remove/flatten.
-            // In a robust implementation, you might log a warning or handle 
+            // In a robust implementation, you might log a warning or handle
             // the coordinate counts for the original commands (e.g., q, c, x).
             // For this design, we trust path2d.
-            break; 
+            break
         }
     }
 
@@ -2301,11 +2293,8 @@ function boundingBoxPath(pathObject) {
     return {
         min: { x: minX, y: minY },
         max: { x: maxX, y: maxY }
-    };
+    }
 }
-
-
-
 
 // Function definitions for 'boundingBox', 'align', 'translate', and 'applyToMesh'
 // are assumed to be available in the execution scope.
@@ -2390,9 +2379,81 @@ function placement(offsets = {}, obj, ...target) {
             const objAnchor = cmd[0]
             const targetAnchor = cmd[1]
             const axisLetter = cmd[2]
-			//PrintLog(objAnchor+targetAnchor+)
-            if (axisLetter === 'x') {
+			
+			if(axisLetter==="x") {
 				
+				if(objAnchor=="l"){
+					ox = objBounds.min.x;
+				}
+				else if (objAnchor === 'c') {
+                    ox = (objBounds.min.x + objBounds.max.x) / 2
+                }
+				else if(objAnchor=="r"){
+					ox = objBounds.max.x;
+				}
+				
+				if(targetAnchor=="l"){
+					tx = targetBounds.min.x;
+				}
+				else if (targetAnchor === 'c') {
+                    tx = (targetBounds.min.x + targetBounds.max.x) / 2
+                }
+				else if(targetAnchor=="r"){
+					tx = targetBounds.max.x;
+				}
+			}
+			else if(axisLetter==="y") {
+				
+				if(objAnchor=="u"){
+					oy = objBounds.min.y;
+				}
+				else if (objAnchor === 'c') {
+                    oy = (objBounds.min.y + objBounds.max.y) / 2
+                }
+				else if(objAnchor=="d"){
+					oy = objBounds.max.y;
+				}
+				
+				if(targetAnchor=="u"){
+					ty = targetBounds.min.y;
+				}
+				else if (targetAnchor === 'c') {
+                    ty = (targetBounds.min.y + targetBounds.max.y) / 2
+                }
+				else if(targetAnchor=="d"){
+					ty = targetBounds.max.y;
+				}
+			}
+			else if(axisLetter==="z") {
+				
+				if(objAnchor=="b"){
+					oz = objBounds.min.z;
+				}
+				else if (objAnchor === 'c') {
+                    oz = (objBounds.min.z + objBounds.max.z) / 2
+                }
+				else if(objAnchor=="t"){
+					oz = objBounds.max.z;
+				}
+				
+				if(targetAnchor=="b"){
+					tz = targetBounds.min.z;
+				}
+				else if (targetAnchor === 'c') {
+                    tz = (targetBounds.min.z + targetBounds.max.z) / 2
+                }
+				else if(targetAnchor=="t"){
+					tz = targetBounds.max.z;
+				}
+			}
+			
+			
+			
+			
+			
+            //PrintLog(objAnchor+targetAnchor+)
+            /*
+			if (axisLetter === 'x') {
                 if (objAnchor === 't') {
                     ox = objBounds.min.x
                 } else if (objAnchor === 'c') {
@@ -2446,6 +2507,11 @@ function placement(offsets = {}, obj, ...target) {
                 } else continue
                 zz = offsetValue
             } else continue
+			//*/
+			
+			
+			
+			
         }
     }
 
@@ -2457,18 +2523,14 @@ function placement(offsets = {}, obj, ...target) {
         ty === undefined ||
         tz === undefined
     ) {
-		
-		
         PrintError('All placment offsets need to be defined.')
         return
     }
 
     translate([ox - tx + xx, oy - ty + yy, oz - tz + zz], ...target)
-    
-	return[obj,...target]
+
+    return [obj, ...target]
 }
-
-
 
 /**
  * Translates a path data object.
@@ -2477,9 +2539,9 @@ function placement(offsets = {}, obj, ...target) {
  * @returns {object} A new path data object with translated coordinates.
  */
 function translatePath([x, y], pathObject) {
-	//PrintLog("x:"+x, "y:"+y)
-	//PrintLog("here1:"+JSON.stringify(pathObject))
-	
+    //PrintLog("x:"+x, "y:"+y)
+    //PrintLog("here1:"+JSON.stringify(pathObject))
+
     const newPath = []
     let i = 0
     while (i < pathObject.path.length) {
@@ -2498,9 +2560,9 @@ function translatePath([x, y], pathObject) {
             case 'q':
             case 'x':
                 newPath.push(
-                    pathObject.path[i] + x,      // Point 1 X (Control for q, Ctr for x)
-                    pathObject.path[i + 1] + y,  // Point 1 Y
-                    pathObject.path[i + 2] + x,  // Point 2 X (End for q, End for x)
+                    pathObject.path[i] + x, // Point 1 X (Control for q, Ctr for x)
+                    pathObject.path[i + 1] + y, // Point 1 Y
+                    pathObject.path[i + 2] + x, // Point 2 X (End for q, End for x)
                     pathObject.path[i + 3] + y
                 )
                 i += 4
@@ -2509,11 +2571,11 @@ function translatePath([x, y], pathObject) {
             // Absolute command with 3 points: c
             case 'c':
                 newPath.push(
-                    pathObject.path[i] + x,      // Control Point 1 X
-                    pathObject.path[i + 1] + y,  // Control Point 1 Y
-                    pathObject.path[i + 2] + x,  // Control Point 2 X
-                    pathObject.path[i + 3] + y,  // Control Point 2 Y
-                    pathObject.path[i + 4] + x,  // End Point X
+                    pathObject.path[i] + x, // Control Point 1 X
+                    pathObject.path[i + 1] + y, // Control Point 1 Y
+                    pathObject.path[i + 2] + x, // Control Point 2 X
+                    pathObject.path[i + 3] + y, // Control Point 2 Y
+                    pathObject.path[i + 4] + x, // End Point X
                     pathObject.path[i + 5] + y
                 )
                 i += 6
@@ -2530,17 +2592,22 @@ function translatePath([x, y], pathObject) {
             case 'qr':
             case 'xr': {
                 newPath.push(
-                    pathObject.path[i], pathObject.path[i + 1],
-                    pathObject.path[i + 2], pathObject.path[i + 3]
+                    pathObject.path[i],
+                    pathObject.path[i + 1],
+                    pathObject.path[i + 2],
+                    pathObject.path[i + 3]
                 )
                 i += 4
                 break
             }
             case 'cr': {
                 newPath.push(
-                    pathObject.path[i], pathObject.path[i + 1],
-                    pathObject.path[i + 2], pathObject.path[i + 3],
-                    pathObject.path[i + 4], pathObject.path[i + 5]
+                    pathObject.path[i],
+                    pathObject.path[i + 1],
+                    pathObject.path[i + 2],
+                    pathObject.path[i + 3],
+                    pathObject.path[i + 4],
+                    pathObject.path[i + 5]
                 )
                 i += 6
                 break
@@ -2550,7 +2617,12 @@ function translatePath([x, y], pathObject) {
             case 'r':
             case 's':
                 // Non-coordinate commands
-                const numArgs = command === 'n' || command === 'r' ? 1 : command === 's' ? 2 : 0
+                const numArgs =
+                    command === 'n' || command === 'r'
+                        ? 1
+                        : command === 's'
+                        ? 2
+                        : 0
                 for (let k = 0; k < numArgs; k++) {
                     newPath.push(pathObject.path[i + k])
                 }
@@ -2606,17 +2678,19 @@ function rotatePath(angle, pathObject) {
             case 'qr':
             case 'x':
             case 'xr':
-                x1 = pathObject.path[i]     // Point 1 X
+                x1 = pathObject.path[i] // Point 1 X
                 y1 = pathObject.path[i + 1] // Point 1 Y
-                x = pathObject.path[i + 2]  // Point 2 X
-                y = pathObject.path[i + 3]  // Point 2 Y
+                x = pathObject.path[i + 2] // Point 2 X
+                y = pathObject.path[i + 3] // Point 2 Y
 
                 const rotated1 = rotate(x1, y1)
                 const rotatedEnd = rotate(x, y)
 
                 newPath.push(
-                    rotated1[0], rotated1[1], // Point 1 (Control/Center)
-                    rotatedEnd[0], rotatedEnd[1] // Point 2 (End)
+                    rotated1[0],
+                    rotated1[1], // Point 1 (Control/Center)
+                    rotatedEnd[0],
+                    rotatedEnd[1] // Point 2 (End)
                 )
                 i += 4
                 break
@@ -2624,21 +2698,24 @@ function rotatePath(angle, pathObject) {
             // Commands with three points: c, cr (Absolute and Relative points must be rotated)
             case 'c':
             case 'cr':
-                x1 = pathObject.path[i]     // Control Point 1 X
+                x1 = pathObject.path[i] // Control Point 1 X
                 y1 = pathObject.path[i + 1] // Control Point 1 Y
                 x2 = pathObject.path[i + 2] // Control Point 2 X
                 y2 = pathObject.path[i + 3] // Control Point 2 Y
-                x = pathObject.path[i + 4]  // End Point X
-                y = pathObject.path[i + 5]  // End Point Y
+                x = pathObject.path[i + 4] // End Point X
+                y = pathObject.path[i + 5] // End Point Y
 
                 const rotatedA = rotate(x1, y1)
                 const rotatedB = rotate(x2, y2)
                 const rotatedC = rotate(x, y)
 
                 newPath.push(
-                    rotatedA[0], rotatedA[1], // Control Point 1
-                    rotatedB[0], rotatedB[1], // Control Point 2
-                    rotatedC[0], rotatedC[1]  // End Point
+                    rotatedA[0],
+                    rotatedA[1], // Control Point 1
+                    rotatedB[0],
+                    rotatedB[1], // Control Point 2
+                    rotatedC[0],
+                    rotatedC[1] // End Point
                 )
                 i += 6
                 break
@@ -2647,7 +2724,12 @@ function rotatePath(angle, pathObject) {
             case 'r':
             case 's':
                 // Non-coordinate commands
-                const numArgs = command === 'n' || command === 'r' ? 1 : command === 's' ? 2 : 0
+                const numArgs =
+                    command === 'n' || command === 'r'
+                        ? 1
+                        : command === 's'
+                        ? 2
+                        : 0
                 for (let k = 0; k < numArgs; k++) {
                     newPath.push(pathObject.path[i + k])
                 }
@@ -2659,8 +2741,6 @@ function rotatePath(angle, pathObject) {
     }
     return { path: newPath, fn: pathObject.fn }
 }
-
-
 
 /**
  * Scales a path data object by a given factor.
@@ -2699,17 +2779,19 @@ function scalePath([scaleX, scaleY], pathObject) {
             case 'qr':
             case 'x': // Absolute Arc with 3 points: P0 (cp), P1 (Ctr), P2 (End). Arguments are P1, P2.
             case 'xr': // Relative Arc with 3 points. Arguments are P1_rel, P2_rel.
-                x1 = pathObject.path[i]     // Point 1 X
+                x1 = pathObject.path[i] // Point 1 X
                 y1 = pathObject.path[i + 1] // Point 1 Y
-                x = pathObject.path[i + 2]  // Point 2 X
-                y = pathObject.path[i + 3]  // Point 2 Y
+                x = pathObject.path[i + 2] // Point 2 X
+                y = pathObject.path[i + 3] // Point 2 Y
 
                 const scaled1 = scalePoint(x1, y1)
                 const scaledEnd = scalePoint(x, y)
 
                 newPath.push(
-                    scaled1[0], scaled1[1],     // Point 1 (Control/Center)
-                    scaledEnd[0], scaledEnd[1]  // Point 2 (End)
+                    scaled1[0],
+                    scaled1[1], // Point 1 (Control/Center)
+                    scaledEnd[0],
+                    scaledEnd[1] // Point 2 (End)
                 )
                 i += 4
                 break
@@ -2717,21 +2799,24 @@ function scalePath([scaleX, scaleY], pathObject) {
             // Commands with three points: c, cr (Absolute and Relative points are scaled)
             case 'c':
             case 'cr':
-                x1 = pathObject.path[i]     // Control Point 1 X
+                x1 = pathObject.path[i] // Control Point 1 X
                 y1 = pathObject.path[i + 1] // Control Point 1 Y
                 x2 = pathObject.path[i + 2] // Control Point 2 X
                 y2 = pathObject.path[i + 3] // Control Point 2 Y
-                x = pathObject.path[i + 4]  // End Point X
-                y = pathObject.path[i + 5]  // End Point Y
+                x = pathObject.path[i + 4] // End Point X
+                y = pathObject.path[i + 5] // End Point Y
 
                 const scaledA = scalePoint(x1, y1)
                 const scaledB = scalePoint(x2, y2)
                 const scaledC = scalePoint(x, y)
 
                 newPath.push(
-                    scaledA[0], scaledA[1], // Control Point 1
-                    scaledB[0], scaledB[1], // Control Point 2
-                    scaledC[0], scaledC[1]  // End Point
+                    scaledA[0],
+                    scaledA[1], // Control Point 1
+                    scaledB[0],
+                    scaledB[1], // Control Point 2
+                    scaledC[0],
+                    scaledC[1] // End Point
                 )
                 i += 6
                 break
@@ -2745,12 +2830,12 @@ function scalePath([scaleX, scaleY], pathObject) {
                 const radiusY = pathObject.path[i + 3]
 
                 newPath.push(
-                    centerX * scaleX,         // Scaled Center X
-                    centerY * scaleY,         // Scaled Center Y
-                    radiusX * scaleX,         // Scaled Radius X
-                    radiusY * scaleY,         // Scaled Radius Y
-                    pathObject.path[i + 4],   // Start Angle (Angles are invariant to uniform scaling)
-                    pathObject.path[i + 5],   // End Angle
+                    centerX * scaleX, // Scaled Center X
+                    centerY * scaleY, // Scaled Center Y
+                    radiusX * scaleX, // Scaled Radius X
+                    radiusY * scaleY, // Scaled Radius Y
+                    pathObject.path[i + 4], // Start Angle (Angles are invariant to uniform scaling)
+                    pathObject.path[i + 5], // End Angle
                     ...(command === 'e' ? [pathObject.path[i + 6]] : []) // flags
                 )
                 i += command === 'a' ? 6 : 7
@@ -2760,7 +2845,12 @@ function scalePath([scaleX, scaleY], pathObject) {
             case 'n':
             case 'r':
             case 's':
-                const numArgs = command === 'n' || command === 'r' ? 1 : command === 's' ? 2 : 0
+                const numArgs =
+                    command === 'n' || command === 'r'
+                        ? 1
+                        : command === 's'
+                        ? 2
+                        : 0
                 for (let k = 0; k < numArgs; k++) {
                     newPath.push(pathObject.path[i + k])
                 }
@@ -2773,10 +2863,6 @@ function scalePath([scaleX, scaleY], pathObject) {
     }
     return { path: newPath, fn: pathObject.fn }
 }
-
-
-
-
 
 /**
  * Scales a path data object to a specific dimension.
@@ -2832,9 +2918,8 @@ function scaleAddPath(config = {}, pathObject) {
  */
 function alignPath(config = {}, pathObject) {
     const bbox = boundingBoxPath(pathObject)
-	//PrintLog("bbox: "+JSON.stringify(bbox))
-	
-	
+    //PrintLog("bbox: "+JSON.stringify(bbox))
+
     const currentCx = (bbox.min.x + bbox.max.x) / 2
     const currentCy = (bbox.min.y + bbox.max.y) / 2
 
@@ -3808,7 +3893,7 @@ const _exportedFunctions = {
     text,
     translatePath,
     rotatePath,
-	boundingBoxPath,
+    boundingBoxPath,
     scalePath,
     scaleToPath,
     scaleAddPath,
