@@ -241,7 +241,7 @@ function cylinder({ d, dt, db, r, rt, rb, h, fn } = {}) {
 function translate([x, y, z], ...target) {
     applyToMesh(target, (item) => {
         //item.position.set(x, z, y)
-        item.geometry.translate(x, z, y)
+        item.geometry.translate(x, z, -y)
     })
     return target
 }
@@ -345,11 +345,11 @@ function align(config = {}, target) {
         }
 
         if (config.uy !== undefined) {
-            offset.z = config.uy - bbox.min.z
+            offset.z = -config.uy - bbox.min.z
         } else if (config.dy !== undefined) {
-            offset.z = config.dy - bbox.max.z
+            offset.z = -config.dy - bbox.max.z
         } else if (config.cy !== undefined) {
-            offset.z = config.cy - center.z
+            offset.z = -config.cy - center.z
         }
 
         if (config.bz !== undefined) {
@@ -690,8 +690,8 @@ function path3d(path) {
             case 'm':
                 cp = [paths[i + 1], paths[i + 3], paths[i + 2]]
                 newPath.p.push([...cp])
-                newPath.r.push(cr)
-                newPath.s.push([...cs])
+                newPath.r.push(atr)
+                newPath.s.push([...ats])
                 i += 4
                 break
             case 'mr':
@@ -701,8 +701,8 @@ function path3d(path) {
                     cp[2] + paths[i + 2]
                 ]
                 newPath.p.push([...cp])
-                newPath.r.push(cr)
-                newPath.s.push([...cs])
+                newPath.r.push(atr)
+                newPath.s.push([...ats])
                 i += 4
                 break
             case 'l': {
@@ -1651,6 +1651,412 @@ function arcPath3d(config) {
     }
 }
 
+////////////////////////////////
+
+
+
+/**
+helper function for linePaths3d.
+ * @param {THREE.Vector3} vector - The vector to be rotated (mutated in place).
+ * @param {THREE.Quaternion} quaternion - The rotation to apply.
+ * @returns {THREE.Vector3} The rotated vector (same object as the input vector).
+ */
+function applyQuaternion(vector, quaternion) {
+    // Treat the vector as a pure quaternion: p = (vector.x, vector.y, vector.z, 0)
+    const x = vector.x;
+    const y = vector.y;
+    const z = vector.z;
+
+    // Quaternion components: q = (quaternion.x, quaternion.y, quaternion.z, quaternion.w)
+    const qx = quaternion.x;
+    const qy = quaternion.y;
+    const qz = quaternion.z;
+    const qw = quaternion.w;
+
+    // The calculation simplifies the full conjugation (q * p * q_inverse)
+    // for the case where p is a pure quaternion and q is a unit quaternion (normalized).
+
+    // --- Calculate q * p ---
+    // The result is a new quaternion t = (tx, ty, tz, tw)
+
+    const tw = - qx * x - qy * y - qz * z;
+    const tx =   qw * x + qy * z - qz * y;
+    const ty =   qw * y - qx * z + qz * x;
+    const tz =   qw * z + qx * y - qy * x;
+
+    // --- Calculate t * q_inverse (which is t * conjugate(q) for a unit quaternion) ---
+    // q_inverse = ( -qx, -qy, -qz, qw )
+    // The result is the rotated pure quaternion p' = (px', py', pz', 0)
+    // The new vector components (x', y', z') are (px', py', pz')
+
+    vector.x = tx * qw + tw * (-qx) + ty * (-qz) - tz * (-qy);
+    vector.y = ty * qw + tw * (-qy) + tz * (-qx) - tx * (-qz);
+    vector.z = tz * qw + tw * (-qz) + tx * (-qy) - ty * (-qx);
+    // The scalar component will be zero, which confirms it's a pure quaternion (a vector).
+
+    return vector;
+}
+
+
+
+
+
+
+/**
+ * @param {object} target - The parent object to which the shapes are applied.
+ * @param {object} path - The pre-processed path data containing points, rotations, and normals.
+ * @param {boolean} close - A flag to indicate if the path should be closed.
+ * @returns {THREE.Mesh[]} An array of THREE.js meshes.
+ */
+//work on
+function linePaths3d(target, commandPath, close) {
+    var path = path3d(commandPath)
+	
+	jlog("path", path);
+    //PrintLog(JSON.stringify(path));
+    // This part of the code is not being modified, but it's included for context
+    var shapes = []
+    applyToShape(target, (item) => {
+        shapes.push(item)
+    })
+
+    var points3d = []
+
+    var preCalc = []
+
+    var upVector = new THREE.Vector3(0, 0, 1)
+
+    // --- Calculation for Initial Rotation from path.p ---
+
+    // Get the first two points from the path.p array
+    // path.p[i] is [x, y, z] in 3D printer coordinates,
+    // where x and y are the planar coordinates (ground plane).
+    const p1 = path.p[0]
+    const p2 = path.p[1]
+
+    // Calculate delta x (dx) and delta y (dy)
+    const dx = p2[0] - p1[0] // x2 - x1
+    const dy = p2[1] - p1[1] // y2 - y1
+	
+    // Calculate the angle using Math.atan2(dy, dx).
+    // This gives the angle in radians on the X-Y plane (3D printer coordinates).
+    // This angle corresponds to rotating the shape around the Y-axis.
+    //const initialRotationRadians = Math.atan2(dy, dx) + Math.PI / 2;
+
+	const initialRotationRadians =  Math.PI / 2;
+	
+    const cosR = Math.cos(initialRotationRadians)
+    const sinR = Math.sin(initialRotationRadians)
+    // --- End of Calculation ---
+	
+	
+    for (var i = 0; i < path.p.length; i++) {
+        points3d.push(...[0, 0, i])
+
+        // Apply 2D rotation on X and Z
+        const rotation = path.r[i]
+
+        var o = {}
+        o.cosR = Math.cos((rotation / 180) * Math.PI)
+        o.sinR = Math.sin((rotation / 180) * Math.PI)
+
+        // Now, we need to apply the 3D rotation from the normals and translation.
+        // Create a quaternion to handle the 3D orientation.
+        const normal = new THREE.Vector3().fromArray(path.n[i])
+        //const upVector = new THREE.Vector3(0, 1, 0);
+        o.quaternion = new THREE.Quaternion().setFromUnitVectors(
+            upVector,
+            normal
+        )
+
+        //upVector.applyQuaternion(o.quaternion)
+		applyQuaternion(upVector, o.quaternion)
+
+        preCalc.push(o)
+    }
+
+    const meshes = [] // An array to store all the created meshes
+
+    if (!points3d || points3d.length < 6) {
+        PrintWarn(
+            'linePaths3d requires at least 6 numbers (2 points) for the 3D extrusion path.'
+        )
+        return null
+    }
+	
+	
+	//apply the point3d 
+	//const setOrintation
+	
+	
+	
+    //helper function to generate geometries from a shape
+    const genFromShape = (shape) => {
+        var geometry = new THREE.BufferGeometry()
+        var vertices = [];
+        var indices = [];
+		var uvs = [];
+		
+
+        let vertexCount = 0 // Current index for the next vertex to be added
+
+        // --- 1. Extract 2D points from the shape and its holes ---
+        // A division count of 1 is sufficient for straight lines, use higher for curves.
+        const shapeData = shape.extractPoints(1)
+        const contourPoints = shapeData.shape // Outer path (THREE.Vector2 array)
+        const holePoints = shapeData.holes // Array of hole paths (Array of THREE.Vector2 arrays)
+		
+		// --- NEW: Rotate Shape Points ---
+        // Rotate the primary shape points
+        for (const point of contourPoints) {
+            const x = point.x
+            const y = point.y
+            point.x = x * cosR - y * sinR
+            point.y = x * sinR + y * cosR
+        }
+
+        // Rotate the hole points
+        for (const hole of holePoints) {
+            for (const point of hole) {
+                const x = point.x
+                const y = point.y
+                point.x = x * cosR - y * sinR
+                point.y = x * sinR + y * cosR
+            }
+        }
+        // --- END NEW: Rotate Shape Points ---
+
+		
+		//*/
+		
+		
+		
+
+        // --- 2. Triangulate the 2D shape for the caps ---
+        const capTriangles = THREE.ShapeUtils.triangulateShape(
+            contourPoints,
+            holePoints
+        )
+		
+		// Get bounding box of the 2D shape for normalized Cap UVs
+    	const allPoints = [contourPoints, ...holePoints].flat();
+	    const minX = Math.min(...allPoints.map(p => p.x));
+	    const maxX = Math.max(...allPoints.map(p => p.x));
+	    const minY = Math.min(...allPoints.map(p => p.y));
+	    const maxY = Math.max(...allPoints.map(p => p.y));
+	    const width = maxX - minX;
+	    const height = maxY - minY;
+		const segments = (points3d.length/3)-1;
+		
+		
+		
+		const calcFinalPoint=(point , i) =>{
+			
+			//================================
+					//set the orintations here
+		            // Get the local cross-section coordinates from the extruded geometry.
+					
+					var x = point.x;//sp.getX(i)
+		            var y = point.y; // This is set to 0 to flatten out the cross section.
+		            var z = 0; //sp.getZ(i)
+					
+					
+					
+		            // Apply path.s for scale
+		            x = x * path.s[i][0]
+		            y = y * path.s[i][1]
+					
+					
+		            // Apply 2D rotation on X and Z
+		            //const rotation = path.r[yindex];
+		            var o = preCalc[i]
+		            //const cosR = Math.cos(rotation/180*Math.PI);
+		            //const sinR = Math.sin(rotation/180*Math.PI);
+		
+		            let rotatedX = x * o.cosR - y * o.sinR
+		            let rotatedY = x * o.sinR + y * o.cosR
+		
+		            x = rotatedX;
+		            y = rotatedY;
+					
+		            // Create a point in local space.
+		            const ppoint = new THREE.Vector3(x, y, z)
+		
+		            // Apply the 3D rotation to the point using the quaternion.
+		
+		            for (var k = 0; k <= i; k++) {
+		                //ppoint.applyQuaternion(preCalc[k].quaternion)
+						applyQuaternion(ppoint, preCalc[k].quaternion);
+		            }
+		
+		            // Apply the 3D translation from path.p[yindex]
+		            ppoint.x += path.p[i][0]
+		            ppoint.y += path.p[i][1]
+		            ppoint.z += path.p[i][2]
+			return ppoint;
+		}
+		
+		//////////////////////////
+		//add caps here
+		
+		
+		const addCap = (isTop) => {
+        	const capStartVertexCount = vertexCount;
+	        var i;
+			if(isTop) i= segments;
+			else i = 0;
+	        for (const point of allPoints) {
+				var ppoint=calcFinalPoint(point, i)
+	            vertices.push(ppoint.x, ppoint.y, -ppoint.z);
+	            vertexCount++;
+	
+	            // UVs for Caps: Normalize X/Y coordinates to fit in the 0-1 UV space
+	            // U = (X - minX) / width
+	            // V = (Y - minY) / height
+	            uvs.push((point.x - minX) / width, (point.y - minY) / height); 
+	        }
+	
+	        // 4b. Generate Indices (Faces) (No change here from previous version)
+	        for (const tri of capTriangles) {
+	            const v1 = capStartVertexCount + tri[0];
+	            const v2 = capStartVertexCount + tri[1];
+	            const v3 = capStartVertexCount + tri[2];
+	
+	            if (isTop) {
+	                indices.push(v1, v2, v3);
+	            } else {
+	                indices.push(v1, v3, v2);
+	            }
+	        }
+	    };
+	
+	    // Add the top and bottom caps
+		if(!close) {
+	    	addCap(true);
+	    	addCap(false);
+		}
+		
+		
+		
+		
+		
+		
+		////////////////////
+		
+		
+		
+		
+		
+		
+		
+		
+		
+        // Helper function to generate side vertices and indices for one contour (outer or hole)
+	    const extrudeContour = (points, reverseWinding) => {
+	        const contourStartVertexCount = vertexCount;
+	        const numPoints = points.length;
+	
+	        // 3a. Calculate total length of this contour for side UVs
+	        let contourLength = 0;
+	        for (let i = 0; i < numPoints; i++) {
+	            const p1 = points[i];
+	            const p2 = points[(i + 1) % numPoints];
+	            contourLength += p1.distanceTo(p2);
+	        }
+	
+	        // 3b. Generate Vertices and UVs
+	        let u_current = 0; // The 'U' coordinate tracks distance along the contour
+	        
+	        for (let i = 0; i <= segments; i++) { // Loop depth segments (V coordinate)
+	            //const z = i;
+	            const v = 1 - (i / segments); // V coordinate: 1 at bottom, 0 at top
+	
+	            u_current = 0; // Reset U for each depth slice
+	
+	            for (let j = 0; j < numPoints; j++) { // Loop 2D points (U coordinate)
+	                const point = points[j];
+					
+					
+					
+					
+					var ppoint= calcFinalPoint(point, i)
+					
+					
+	
+	                // Positions
+					vertices.push(ppoint.x, ppoint.y, -ppoint.z);
+	                
+					
+	                // UVs (U: distance along contour, V: distance along depth)
+	                uvs.push(u_current / contourLength, v); // U is normalized by total length
+	                vertexCount++;
+	                
+	                // Update U distance for the next point
+	                const p1 = points[j];
+	                const p2 = points[(j + 1) % numPoints];
+	                u_current += p1.distanceTo(p2);
+	            }
+	        }
+	
+	        // 3c. Generate Indices (Faces) (No change here from previous version)
+	        for (let i = 0; i < segments; i++) {
+	            for (let j = 0; j < numPoints; j++) {
+	                const idx_a = contourStartVertexCount + i * numPoints + j;
+	                const idx_b = contourStartVertexCount + i * numPoints + (j + 1) % numPoints;
+	                const idx_c = contourStartVertexCount + (i + 1) * numPoints + (j + 1) % numPoints;
+	                const idx_d = contourStartVertexCount + (i + 1) * numPoints + j;
+	
+	                if (reverseWinding) {
+	                    indices.push(idx_a, idx_d, idx_c);
+	                    indices.push(idx_a, idx_c, idx_b);
+	                } else {
+						
+	                    indices.push(idx_a, idx_b, idx_c);
+	                    indices.push(idx_a, idx_c, idx_d);
+						
+	                }
+	            }
+	        }
+	    };
+
+        // Extrude main outline and then all holes
+        extrudeContour(contourPoints, false)
+        for (const hole of holePoints) {
+            extrudeContour(hole, true)
+        }
+		
+
+        // --- 6. Finalize Geometry (Indexed BufferGeometry) ---
+        geometry.setIndex(indices)
+        geometry.setAttribute(
+            'position',
+            new THREE.Float32BufferAttribute(vertices, 3)
+        )
+		
+		//<-- CRITICAL STEP: Set the UV attribute
+    	geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2)); 
+    
+		
+        geometry.computeVertexNormals()
+
+        //return geometry
+		return new THREE.Mesh(geometry, defaultMaterial.clone());
+    }
+
+    for (const shape of shapes) {
+        meshes.push(genFromShape(shape))
+    }
+	PrintLog("len"+meshes.length)
+
+    
+	
+
+    // Return the array of meshes.
+    return meshes
+}
+
+///////////////////////////////////
+
 /**
  * @param {object} target - The parent object to which the shapes are applied.
  * @param {object} path - The pre-processed path data containing points, rotations, and normals.
@@ -1659,7 +2065,7 @@ function arcPath3d(config) {
  */
 //old good
 
-function linePaths3d(target, commandPath, close) {
+function linePaths3dG(target, commandPath, close) {
     var path = path3d(commandPath)
     //PrintLog(JSON.stringify(path));
     // This part of the code is not being modified, but it's included for context
@@ -1748,28 +2154,7 @@ function linePaths3d(target, commandPath, close) {
 
         extrudePath.add(new THREE.LineCurve3(startVector, endVector))
     }
-    //if (close && points3d.length > 6) {
-    //extrudePath.closePath();
-    //}
-    /*
-    // Add a closing segment if the 'close' parameter is true
-    if (close && points3d.length > 6) {
-        const startPointIndex = points3d.length - 3
-        const endPointIndex = 0
-
-        const startVector = new THREE.Vector3(
-            points3d[startPointIndex],
-            points3d[startPointIndex + 2],
-            points3d[startPointIndex + 1]
-        )
-        const endVector = new THREE.Vector3(
-            points3d[endPointIndex],
-            points3d[endPointIndex + 2],
-            points3d[endPointIndex + 1]
-        )
-
-        extrudePath.add(new THREE.LineCurve3(startVector, endVector))
-    }//*/
+    
 
     const numPoints = points3d.length / 3
 
@@ -2379,78 +2764,57 @@ function placement(offsets = {}, obj, ...target) {
             const objAnchor = cmd[0]
             const targetAnchor = cmd[1]
             const axisLetter = cmd[2]
-			
-			if(axisLetter==="x") {
-				
-				if(objAnchor=="l"){
-					ox = objBounds.min.x;
-				}
-				else if (objAnchor === 'c') {
+
+            if (axisLetter === 'x') {
+                if (objAnchor == 'l') {
+                    ox = objBounds.min.x
+                } else if (objAnchor === 'c') {
                     ox = (objBounds.min.x + objBounds.max.x) / 2
+                } else if (objAnchor == 'r') {
+                    ox = objBounds.max.x
                 }
-				else if(objAnchor=="r"){
-					ox = objBounds.max.x;
-				}
-				
-				if(targetAnchor=="l"){
-					tx = targetBounds.min.x;
-				}
-				else if (targetAnchor === 'c') {
+
+                if (targetAnchor == 'l') {
+                    tx = targetBounds.min.x
+                } else if (targetAnchor === 'c') {
                     tx = (targetBounds.min.x + targetBounds.max.x) / 2
+                } else if (targetAnchor == 'r') {
+                    tx = targetBounds.max.x
                 }
-				else if(targetAnchor=="r"){
-					tx = targetBounds.max.x;
-				}
-			}
-			else if(axisLetter==="y") {
-				
-				if(objAnchor=="u"){
-					oy = objBounds.min.y;
-				}
-				else if (objAnchor === 'c') {
+            } else if (axisLetter === 'y') {
+                if (objAnchor == 'u') {
+                    oy = objBounds.max.y
+                } else if (objAnchor === 'c') {
                     oy = (objBounds.min.y + objBounds.max.y) / 2
+                } else if (objAnchor == 'd') {
+                    oy = objBounds.min.y
                 }
-				else if(objAnchor=="d"){
-					oy = objBounds.max.y;
-				}
-				
-				if(targetAnchor=="u"){
-					ty = targetBounds.min.y;
-				}
-				else if (targetAnchor === 'c') {
+
+                if (targetAnchor == 'u') {
+                    ty = targetBounds.max.y
+                } else if (targetAnchor === 'c') {
                     ty = (targetBounds.min.y + targetBounds.max.y) / 2
+                } else if (targetAnchor == 'd') {
+                    ty = targetBounds.min.y
                 }
-				else if(targetAnchor=="d"){
-					ty = targetBounds.max.y;
-				}
-			}
-			else if(axisLetter==="z") {
-				
-				if(objAnchor=="b"){
-					oz = objBounds.min.z;
-				}
-				else if (objAnchor === 'c') {
+            } else if (axisLetter === 'z') {
+                if (objAnchor == 'b') {
+                    oz = objBounds.min.z
+                } else if (objAnchor === 'c') {
                     oz = (objBounds.min.z + objBounds.max.z) / 2
+                } else if (objAnchor == 't') {
+                    oz = objBounds.max.z
                 }
-				else if(objAnchor=="t"){
-					oz = objBounds.max.z;
-				}
-				
-				if(targetAnchor=="b"){
-					tz = targetBounds.min.z;
-				}
-				else if (targetAnchor === 'c') {
+
+                if (targetAnchor == 'b') {
+                    tz = targetBounds.min.z
+                } else if (targetAnchor === 'c') {
                     tz = (targetBounds.min.z + targetBounds.max.z) / 2
+                } else if (targetAnchor == 't') {
+                    tz = targetBounds.max.z
                 }
-				else if(targetAnchor=="t"){
-					tz = targetBounds.max.z;
-				}
-			}
-			
-			
-			
-			
-			
+            }
+
             //PrintLog(objAnchor+targetAnchor+)
             /*
 			if (axisLetter === 'x') {
@@ -2508,10 +2872,6 @@ function placement(offsets = {}, obj, ...target) {
                 zz = offsetValue
             } else continue
 			//*/
-			
-			
-			
-			
         }
     }
 
@@ -3883,6 +4243,7 @@ const _exportedFunctions = {
     convertTo3d,
     arcPath3d,
     linePaths3d, // this is the new linePaths3dEx
+	linePaths3dG,
     scaleTo,
     scaleAdd,
     show,
