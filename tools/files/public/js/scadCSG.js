@@ -270,7 +270,7 @@ function floor(...target) {
     applyToMesh(target, (item) => {
         item.geometry.computeBoundingBox()
         const zMin = item.geometry.boundingBox.min.z
-        item.position.z += -(yzMin + item.position.z)
+        item.position.z += -(zMin + item.position.z)
     })
 
     return target
@@ -2769,8 +2769,9 @@ function placement(offsets = {}, obj, ...target) {
             const axisLetter = cmd[2]
 
             if (axisLetter === 'x') {
+				xx=offsetValue;
                 if (objAnchor == 'l') {
-                    ox = objBounds.min.x
+                    ox = objBounds.min.x;
                 } else if (objAnchor === 'c') {
                     ox = (objBounds.min.x + objBounds.max.x) / 2
                 } else if (objAnchor == 'r') {
@@ -2785,22 +2786,24 @@ function placement(offsets = {}, obj, ...target) {
                     tx = targetBounds.max.x
                 }
             } else if (axisLetter === 'y') {
+				yy=offsetValue;
                 if (objAnchor == 'd') {
                     oy = objBounds.min.y
                 } else if (objAnchor === 'c') {
-                    oy = ((objBounds.min.y + objBounds.max.y)) / 2
+                    oy = (objBounds.min.y + objBounds.max.y) / 2
                 } else if (objAnchor == 'u') {
                     oy = objBounds.max.y
                 }
 
-                if (targetAnchor == 'u') {
+                if (targetAnchor == 'd') {
                     ty = targetBounds.min.y
                 } else if (targetAnchor === 'c') {
                     ty = (targetBounds.min.y + targetBounds.max.y) / 2
-                } else if (targetAnchor == 'd') {
+                } else if (targetAnchor == 'u') {
                     ty = targetBounds.max.y
                 }
             } else if (axisLetter === 'z') {
+				zz=offsetValue;
                 if (objAnchor == 'b') {
                     oz = objBounds.min.z
                 } else if (objAnchor === 'c') {
@@ -2834,7 +2837,7 @@ function placement(offsets = {}, obj, ...target) {
         return
     }
 
-    translate([ox - tx + xx, oy +ty - yy, oz - tz + zz], ...target)
+    translate([ox - tx + xx, oy - ty + yy, oz - tz + zz], ...target)
 
     return [obj, ...target]
 }
