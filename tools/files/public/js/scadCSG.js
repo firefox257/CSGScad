@@ -185,7 +185,7 @@ function sphere({ r, d, fn } = {}) {
 }
 
 function cube([x = 1, y = 1, z = 1] = [1, 1, 1]) {
-    const geom = convertGeometry(new THREE.BoxGeometry(x, z, y))
+    const geom = convertGeometry(new THREE.BoxGeometry(x, y, z))
 
     return new THREE.Mesh(geom, defaultMaterial.clone())
 }
@@ -241,7 +241,7 @@ function cylinder({ d, dt, db, r, rt, rb, h, fn } = {}) {
 function translate([x, y, z], ...target) {
     applyToMesh(target, (item) => {
         //item.position.set(x, z, y)
-        item.geometry.translate(x, z, -y)
+        item.geometry.translate(x, y, z)
     })
     return target
 }
@@ -251,8 +251,8 @@ function rotate([x, y, z], ...target) {
     applyToMesh(target, (item) => {
         //item.rotation.set(x, z, y)
         item.geometry.rotateX((x / 180) * -Math.PI)
-        item.geometry.rotateZ((y / 180) * -Math.PI)
-        item.geometry.rotateY((z / 180) * -Math.PI)
+        item.geometry.rotateY((y / 180) * -Math.PI)
+        item.geometry.rotateZ((z / 180) * -Math.PI)
     })
 
     return target
@@ -261,7 +261,7 @@ function rotate([x, y, z], ...target) {
 // --- Functional scale (Corrected for Z-up) ---
 function scale([x, y, z], ...target) {
     applyToMesh(target, (item) => {
-        item.geometry.scale(x, z, y)
+        item.geometry.scale(x, y, z)
     })
     return target
 }
@@ -269,8 +269,8 @@ function scale([x, y, z], ...target) {
 function floor(...target) {
     applyToMesh(target, (item) => {
         item.geometry.computeBoundingBox()
-        const yMin = item.geometry.boundingBox.min.y
-        item.position.y += -(yMin + item.position.y)
+        const zMin = item.geometry.boundingBox.min.z
+        item.position.z += -(yzMin + item.position.z)
     })
 
     return target
@@ -345,19 +345,19 @@ function align(config = {}, target) {
         }
 
         if (config.uy !== undefined) {
-            offset.z = -config.uy - bbox.min.z
+            offset.y = config.uy - bbox.max.y
         } else if (config.dy !== undefined) {
-            offset.z = -config.dy - bbox.max.z
+            offset.y = config.dy - bbox.min.y
         } else if (config.cy !== undefined) {
-            offset.z = -config.cy - center.z
+            offset.y = config.cy - center.y
         }
 
         if (config.bz !== undefined) {
-            offset.y = config.bz - bbox.min.y
+            offset.z = config.bz - bbox.min.z
         } else if (config.tz !== undefined) {
-            offset.y = config.tz - bbox.max.y
+            offset.z = config.tz - bbox.max.z
         } else if (config.cz !== undefined) {
-            offset.y = config.cz - center.y
+            offset.z = config.cz - center.z
         }
 
         mesh.position.add(offset)
@@ -390,7 +390,9 @@ function path3d(path) {
         p: [], // Points (x, y, z)
         r: [], // 2d Rotations
         s: [], // 2d Scales
-        n: [] // Normals (Tangents/Up Vectors)
+        n: [], // Normals (Tangents/Up Vectors)
+		close:path.close,
+		xyInitAng:path.xyInitAng
     }
 
     // ----------------------------------------------------------------------
@@ -688,7 +690,7 @@ function path3d(path) {
 
         switch (command) {
             case 'm':
-                cp = [paths[i + 1], paths[i + 3], paths[i + 2]]
+                cp = [paths[i + 1], paths[i + 2], paths[i + 3]]
                 newPath.p.push([...cp])
                 newPath.r.push(atr)
                 newPath.s.push([...ats])
@@ -697,8 +699,8 @@ function path3d(path) {
             case 'mr':
                 cp = [
                     cp[0] + paths[i + 1],
-                    cp[1] + paths[i + 3],
-                    cp[2] + paths[i + 2]
+                    cp[1] + paths[i + 2],
+                    cp[2] + paths[i + 3]
                 ]
                 newPath.p.push([...cp])
                 newPath.r.push(atr)
@@ -706,7 +708,7 @@ function path3d(path) {
                 i += 4
                 break
             case 'l': {
-                const atp = [paths[i + 1], paths[i + 3], paths[i + 2]]
+                const atp = [paths[i + 1], paths[i + 2], paths[i + 3]]
                 if (atn === 1) {
                     newPath.p.push([...atp])
                     newPath.r.push(atr)
@@ -735,8 +737,8 @@ function path3d(path) {
             case 'lr': {
                 const endPoint_lr = [
                     cp[0] + paths[i + 1],
-                    cp[1] + paths[i + 3],
-                    cp[2] + paths[i + 2]
+                    cp[1] + paths[i + 2],
+                    cp[2] + paths[i + 3]
                 ]
                 if (atn === 1) {
                     newPath.p.push([...endPoint_lr])
@@ -764,9 +766,9 @@ function path3d(path) {
                 break
             }
             case 'q': {
-                const endPoint_q = [paths[i + 4], paths[i + 6], paths[i + 5]]
+                const endPoint_q = [paths[i + 4], paths[i + 5], paths[i + 6]]
                 const controlPoints_q = [
-                    [paths[i + 1], paths[i + 3], paths[i + 2]]
+                    [paths[i + 1], paths[i + 2], paths[i + 3]]
                 ]
                 const segmentsToUse = atn > 1 ? atn : fn
                 const segmentPoints_q = getPointsAtEqualDistance(
@@ -799,14 +801,14 @@ function path3d(path) {
             case 'qr': {
                 const endPoint_qr = [
                     cp[0] + paths[i + 4],
-                    cp[1] + paths[i + 6],
-                    cp[2] + paths[i + 5]
+                    cp[1] + paths[i + 5],
+                    cp[2] + paths[i + 6]
                 ]
                 const controlPoints_qr = [
                     [
                         cp[0] + paths[i + 1],
-                        cp[1] + paths[i + 3],
-                        cp[2] + paths[i + 2]
+                        cp[1] + paths[i + 2],
+                        cp[2] + paths[i + 3]
                     ]
                 ]
                 const segmentsToUse = atn > 1 ? atn : fn
@@ -838,10 +840,10 @@ function path3d(path) {
                 break
             }
             case 'c': {
-                const endPoint_c = [paths[i + 7], paths[i + 9], paths[i + 8]]
+                const endPoint_c = [paths[i + 7], paths[i + 8], paths[i + 9]]
                 const controlPoints_c = [
-                    [paths[i + 1], paths[i + 3], paths[i + 2]],
-                    [paths[i + 4], paths[i + 6], paths[i + 5]]
+                    [paths[i + 1], paths[i + 2], paths[i + 3]],
+                    [paths[i + 4], paths[i + 5], paths[i + 6]]
                 ]
                 const segmentsToUse = atn > 1 ? atn : fn
                 const segmentPoints_c = getPointsAtEqualDistance(
@@ -874,19 +876,19 @@ function path3d(path) {
             case 'cr': {
                 const endPoint_cr = [
                     cp[0] + paths[i + 7],
-                    cp[1] + paths[i + 9],
-                    cp[2] + paths[i + 8]
+                    cp[1] + paths[i + 8],
+                    cp[2] + paths[i + 9]
                 ]
                 const controlPoints_cr = [
                     [
                         cp[0] + paths[i + 1],
-                        cp[1] + paths[i + 3],
-                        cp[2] + paths[i + 2]
+                        cp[1] + paths[i + 2],
+                        cp[2] + paths[i + 3]
                     ],
                     [
                         cp[0] + paths[i + 4],
-                        cp[1] + paths[i + 6],
-                        cp[2] + paths[i + 5]
+                        cp[1] + paths[i + 5],
+                        cp[2] + paths[i + 6]
                     ]
                 ]
                 const segmentsToUse = atn > 1 ? atn : fn
@@ -921,10 +923,10 @@ function path3d(path) {
                 // Absolute 3D Arc
                 const controlPoint_x = [
                     paths[i + 1],
-                    paths[i + 3],
-                    paths[i + 2]
+                    paths[i + 2],
+                    paths[i + 3]
                 ]
-                const endPoint_x = [paths[i + 4], paths[i + 6], paths[i + 5]]
+                const endPoint_x = [paths[i + 4], paths[i + 5], paths[i + 6]]
 
                 const segmentsToUse = atn > 1 ? atn : fn || 16
 
@@ -959,13 +961,13 @@ function path3d(path) {
                 // Relative 3D Arc
                 const controlPoint_xr = [
                     cp[0] + paths[i + 1],
-                    cp[1] + paths[i + 3],
-                    cp[2] + paths[i + 2]
+                    cp[1] + paths[i + 2],
+                    cp[2] + paths[i + 3]
                 ]
                 const endPoint_xr = [
                     cp[0] + paths[i + 4],
-                    cp[1] + paths[i + 6],
-                    cp[2] + paths[i + 5]
+                    cp[1] + paths[i + 5],
+                    cp[2] + paths[i + 6]
                 ]
 
                 const segmentsToUse = atn > 1 ? atn : fn || 16
@@ -1513,25 +1515,25 @@ function convertTo2d(path) {
             case 'mr':
             case 'l':
             case 'lr':
-                newPath.push(path[i + 1], path[i + 3]) // Add X and Y, ignore Z
+                newPath.push(path[i + 1], path[i + 2]) // Add X and Y, ignore Z
                 i += 4
                 break
             case 'q':
             case 'qr':
             case 'x':
             case 'xr':
-                newPath.push(path[i + 1], path[i + 3], path[i + 4], path[i + 6]) // Add CPs and EP, ignore Z
+                newPath.push(path[i + 1], path[i + 2], path[i + 4], path[i + 5]) // Add CPs and EP, ignore Z
                 i += 7
                 break
             case 'c':
             case 'cr':
                 newPath.push(
                     path[i + 1],
-                    path[i + 3],
+                    path[i + 2],
                     path[i + 4],
-                    path[i + 6],
+                    path[i + 5],
                     path[i + 7],
-                    path[i + 9]
+                    path[i + 8]
                 ) // Add CPs and EP, ignore Z
                 i += 10
                 break
@@ -1553,6 +1555,7 @@ function convertTo2d(path) {
 }
 
 function convertTo3d(path, z = 0) {
+	
     const newPath = []
     let i = 0
     while (i < path.length) {
@@ -1563,7 +1566,7 @@ function convertTo3d(path, z = 0) {
             case 'mr':
             case 'l':
             case 'lr':
-                newPath.push(path[i + 1], z, path[i + 2]) // Add X, Z, and Y
+                newPath.push(path[i + 1], path[i + 2], z) // Add X, Z, and Y
                 i += 3
                 break
             case 'q':
@@ -1572,11 +1575,11 @@ function convertTo3d(path, z = 0) {
             case 'xr':
                 newPath.push(
                     path[i + 1],
-                    z,
                     path[i + 2],
+					z,
                     path[i + 3],
-                    z,
-                    path[i + 4]
+                    path[i + 4],
+					z,
                 ) // Add Z for CPs and EP
                 i += 5
                 break
@@ -1584,14 +1587,14 @@ function convertTo3d(path, z = 0) {
             case 'cr':
                 newPath.push(
                     path[i + 1],
-                    z,
                     path[i + 2],
+					z,
                     path[i + 3],
-                    z,
                     path[i + 4],
+					z,
                     path[i + 5],
-                    z,
-                    path[i + 6]
+                    path[i + 6],
+					z
                 ) // Add Z for CPs and EP
                 i += 7
                 break
@@ -1699,9 +1702,6 @@ function applyQuaternion(vector, quaternion) {
 
 
 
-
-
-
 /**
  * @param {object} target - The parent object to which the shapes are applied.
  * @param {object} path - The pre-processed path data containing points, rotations, and normals.
@@ -1709,11 +1709,12 @@ function applyQuaternion(vector, quaternion) {
  * @returns {THREE.Mesh[]} An array of THREE.js meshes.
  */
 //work on
-function linePaths3d(target, commandPath, close) {
+
+function linePaths3d(target, commandPath) {
     var path = path3d(commandPath)
+	let close =path.close;
 	
-	jlog("path", path);
-    //PrintLog(JSON.stringify(path));
+    //jlog("path", path)
     // This part of the code is not being modified, but it's included for context
     var shapes = []
     applyToShape(target, (item) => {
@@ -1738,12 +1739,21 @@ function linePaths3d(target, commandPath, close) {
     const dx = p2[0] - p1[0] // x2 - x1
     const dy = p2[1] - p1[1] // y2 - y1
 	
+	
     // Calculate the angle using Math.atan2(dy, dx).
     // This gives the angle in radians on the X-Y plane (3D printer coordinates).
     // This angle corresponds to rotating the shape around the Y-axis.
-    //const initialRotationRadians = Math.atan2(dy, dx) + Math.PI / 2;
+    let initialRotationRadians;
+	if(path.xyInitAng)
+	{
+		initialRotationRadians = Math.atan2(dy, dx) - Math.PI;
+	}
+	else
+	{
+		initialRotationRadians = Math.PI/2
+	}
 
-	const initialRotationRadians =  Math.PI / 2;
+	//const initialRotationRadians = Math.PI/2
 	
     const cosR = Math.cos(initialRotationRadians)
     const sinR = Math.sin(initialRotationRadians)
@@ -1808,6 +1818,7 @@ function linePaths3d(target, commandPath, close) {
 		
 		// --- NEW: Rotate Shape Points ---
         // Rotate the primary shape points
+		
         for (const point of contourPoints) {
             const x = point.x
             const y = point.y
@@ -1824,10 +1835,11 @@ function linePaths3d(target, commandPath, close) {
                 point.y = x * sinR + y * cosR
             }
         }
+		
         // --- END NEW: Rotate Shape Points ---
 
 		
-		//*/
+		
 		
 		
 		
@@ -1907,7 +1919,7 @@ function linePaths3d(target, commandPath, close) {
 			else i = 0;
 	        for (const point of allPoints) {
 				var ppoint=calcFinalPoint(point, i)
-	            vertices.push(ppoint.x, ppoint.y, -ppoint.z);
+	            vertices.push(ppoint.x, ppoint.y, ppoint.z);
 	            vertexCount++;
 	
 	            // UVs for Caps: Normalize X/Y coordinates to fit in the 0-1 UV space
@@ -1935,20 +1947,6 @@ function linePaths3d(target, commandPath, close) {
 	    	addCap(true);
 	    	addCap(false);
 		}
-		
-		
-		
-		
-		
-		
-		////////////////////
-		
-		
-		
-		
-		
-		
-		
 		
 		
         // Helper function to generate side vertices and indices for one contour (outer or hole)
@@ -1984,7 +1982,7 @@ function linePaths3d(target, commandPath, close) {
 					
 	
 	                // Positions
-					vertices.push(ppoint.x, ppoint.y, -ppoint.z);
+					vertices.push(ppoint.x, ppoint.y, ppoint.z);
 	                
 					
 	                // UVs (U: distance along contour, V: distance along depth)
@@ -2046,14 +2044,19 @@ function linePaths3d(target, commandPath, close) {
     for (const shape of shapes) {
         meshes.push(genFromShape(shape))
     }
-	PrintLog("len"+meshes.length)
-
-    
 	
 
     // Return the array of meshes.
     return meshes
 }
+
+
+//*/
+
+
+
+
+
 
 ///////////////////////////////////
 
@@ -2521,9 +2524,9 @@ function scaleTo(config = {}, ...target) {
         let sizeto = 1
 
         if (config.z != undefined) {
-            sizeto = config.z / size.y
+            sizeto = config.z / size.z
         } else if (config.y != undefined) {
-            sizeto = config.y / size.z
+            sizeto = config.y / size.y
         } else if (config.x != undefined) {
             sizeto = config.x / size.x
         }
@@ -2614,13 +2617,13 @@ function boundingBox(...target) {
     return {
         min: {
             x: masterBox.min.x,
-            y: masterBox.min.z,
-            z: masterBox.min.y
+            y: masterBox.min.y,
+            z: masterBox.min.z
         },
         max: {
             x: masterBox.max.x,
-            y: masterBox.max.z,
-            z: masterBox.max.y
+            y: masterBox.max.y,
+            z: masterBox.max.z
         }
     }
 }
@@ -2782,20 +2785,20 @@ function placement(offsets = {}, obj, ...target) {
                     tx = targetBounds.max.x
                 }
             } else if (axisLetter === 'y') {
-                if (objAnchor == 'u') {
-                    oy = objBounds.max.y
-                } else if (objAnchor === 'c') {
-                    oy = (objBounds.min.y + objBounds.max.y) / 2
-                } else if (objAnchor == 'd') {
+                if (objAnchor == 'd') {
                     oy = objBounds.min.y
+                } else if (objAnchor === 'c') {
+                    oy = ((objBounds.min.y + objBounds.max.y)) / 2
+                } else if (objAnchor == 'u') {
+                    oy = objBounds.max.y
                 }
 
                 if (targetAnchor == 'u') {
-                    ty = targetBounds.max.y
+                    ty = targetBounds.min.y
                 } else if (targetAnchor === 'c') {
                     ty = (targetBounds.min.y + targetBounds.max.y) / 2
                 } else if (targetAnchor == 'd') {
-                    ty = targetBounds.min.y
+                    ty = targetBounds.max.y
                 }
             } else if (axisLetter === 'z') {
                 if (objAnchor == 'b') {
@@ -2815,63 +2818,7 @@ function placement(offsets = {}, obj, ...target) {
                 }
             }
 
-            //PrintLog(objAnchor+targetAnchor+)
-            /*
-			if (axisLetter === 'x') {
-                if (objAnchor === 't') {
-                    ox = objBounds.min.x
-                } else if (objAnchor === 'c') {
-                    ox = (objBounds.min.x + objBounds.max.x) / 2
-                } else if (objAnchor === 'b') {
-                    ox = objBounds.max.x
-                } else continue
-
-                if (targetAnchor === 't') {
-                    tx = targetBounds.min.x
-                } else if (targetAnchor === 'c') {
-                    tx = (targetBounds.min.x + targetBounds.max.x) / 2
-                } else if (targetAnchor === 'b') {
-                    tx = targetBounds.max.x
-                } else continue
-
-                xx = offsetValue
-            } else if (axisLetter === 'y') {
-                if (objAnchor === 't') {
-                    oy = objBounds.min.y
-                } else if (objAnchor === 'c') {
-                    oy = (objBounds.min.y + objBounds.max.y) / 2
-                } else if (objAnchor === 'b') {
-                    oy = objBounds.max.y
-                } else continue
-
-                if (targetAnchor === 't') {
-                    ty = targetBounds.min.y
-                } else if (targetAnchor === 'c') {
-                    ty = (targetBounds.min.y + targetBounds.max.y) / 2
-                } else if (targetAnchor === 'b') {
-                    ty = targetBounds.max.y
-                } else continue
-
-                yy = offsetValue
-            } else if (axisLetter === 'z') {
-                if (objAnchor === 't') {
-                    oz = objBounds.max.z
-                } else if (objAnchor === 'c') {
-                    oz = (objBounds.min.z + objBounds.max.z) / 2
-                } else if (objAnchor === 'b') {
-                    oz = objBounds.min.z
-                } else continue
-
-                if (targetAnchor === 't') {
-                    tz = targetBounds.max.z
-                } else if (targetAnchor === 'c') {
-                    tz = (targetBounds.min.z + targetBounds.max.z) / 2
-                } else if (targetAnchor === 'b') {
-                    tz = targetBounds.min.z
-                } else continue
-                zz = offsetValue
-            } else continue
-			//*/
+            
         }
     }
 
@@ -2887,7 +2834,7 @@ function placement(offsets = {}, obj, ...target) {
         return
     }
 
-    translate([ox - tx + xx, oy - ty + yy, oz - tz + zz], ...target)
+    translate([ox - tx + xx, oy +ty - yy, oz - tz + zz], ...target)
 
     return [obj, ...target]
 }
@@ -3314,7 +3261,7 @@ function alignPath(config = {}, pathObject) {
  */
 function shape(shapeDataPath) {
     var shapeData = path2d(shapeDataPath)
-    //console.log("here:"+JSON.stringify(shapeData));
+    //jlog("shapeData",shapeData)
     const rawPath = shapeData.path
     const allPaths = []
 

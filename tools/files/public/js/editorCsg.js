@@ -56,6 +56,7 @@ var resizeRenderer
 var animate
 var showView
 let scene
+let groupItems
 let currentObjects
 let isWireframeMode = false
 const TOOLBAR_HEIGHT = 35
@@ -273,75 +274,6 @@ globalThis.guid = (() => {
 // const Guid = globalThis.Guid; 
 
 globalThis.___blobfunctions = globalThis.___blobfunctions || {};
-
-/**
- * Creates and returns an async function that, when called, executes the 
- * provided codeString within a dynamically injected Blob script and cleans up.
- * * @param {string} codeString The JavaScript code to execute.
- * @returns {function(): Promise<void>} An async function that runs the code.
- */
- /*
-globalThis.blobFunction =  async function (params, codeString, callBack) 
-{
-	
-	var gid=guid();
-	
-	//var params = ["bla","bla2","bla3"];
-	
-	var code =`___blobfunctions['${gid}'] =  function(${params.join(",")}){return (async ()=>{${codeString}})();}
-	`;
-	
-	//alert(code);
-	
-	// 2. Convert the string code into a Blob of type 'text/javascript'
-	const codeBlob = new Blob([code], { type: 'text/javascript' })
-	// 3. Create a blob: URL for the Blob
-	const blobUrl = URL.createObjectURL(codeBlob)
-	// 4. Dynamically create a <script> tag
-	const scriptElement = document.createElement('script')
-	scriptElement.src = blobUrl
-	// 5. ATTACH THE CLEANUP HANDLER
-	// The 'onload' event fires after the script has been executed.
-	scriptElement.onload = function () {
-		//console.log('Script execution finished. Starting cleanup...')
-		// a. Revoke the blob URL to free up the associated memory.
-		URL.revokeObjectURL(blobUrl)
-		// b. Remove the script element from the DOM.
-		// Check if the parentNode exists before attempting to remove.
-		if (scriptElement.parentNode) {
-			scriptElement.parentNode.removeChild(scriptElement)
-			//console.log('Script element removed from DOM.')
-		}
-		//try {
-			 callBack(___blobfunctions[gid]);
-			 delete ___blobfunctions[gid];
-			 
-		//} catch (e) {
-			//console.log('hereStack Trace from Blob Script:\\n\\n' + e.stack)
-			//alert(e.message)
-		//}
-		
-	}
-	// Handle errors in loading the script (though rare for a blob URL)
-	scriptElement.onerror = function () {
-		PrintError(
-		'Error loading the Blob script. Starting cleanup...'
-		)
-		// Still try to clean up the URL and the element even if an error occurs.
-		URL.revokeObjectURL(blobUrl)
-		if (scriptElement.parentNode) {
-			scriptElement.parentNode.removeChild(scriptElement)
-		}
-	}
-	// 6. Append the script to the document body to trigger execution
-	document.body.appendChild(scriptElement)
-
-	
-}
-//*/
-
-
-
 
 /**
  * Creates and executes a Blob script, and returns a Promise that resolves 
@@ -635,11 +567,11 @@ class ScadProject {
         }
     }
 
-    clearAllCache(scene, currentObjects) {
+    clearAllCache(groupItems, currentObjects) {
         this.meshCache = {}
         this.codeCache = {}
         this.fileCache = {}
-        currentObjects.forEach((obj) => scene.remove(obj))
+        currentObjects.forEach((obj) => groupItems.remove(obj))
         currentObjects.length = 0
     }
 }
@@ -884,7 +816,7 @@ function resetProjectToDefault(path) {
 
     // 2. Clear caches and 3D scene (resets the internal state of the ScadProject instance)
     if (project) {
-        project.clearAllCache(scene, currentObjects)
+        project.clearAllCache(groupItems, currentObjects)
         project.setBasePath(null)
         // CRITICAL: Reset the internal, non-editor-bound values of the project instance
         project._csgValues = defaultData.csgCode
@@ -1145,7 +1077,7 @@ export async function runEditorScript() {
 }
 
 export async function runCSGCode() {
-    currentObjects.forEach((obj) => scene.remove(obj))
+    currentObjects.forEach((obj) => groupItems.remove(obj))
     currentObjects = []
 
     const pageData = csgEditor.values[csgEditor.valuesIndex] // Uses current/restored index
@@ -1160,7 +1092,7 @@ export async function runCSGCode() {
 
     meshes.forEach((item) => {
         if (item.userData.$csgShow == undefined || item.$csgShow) {
-            scene.add(item)
+            groupItems.add(item)
             currentObjects.push(item)
         }
     })
@@ -1263,7 +1195,7 @@ export function exportSTL() {
 }
 
 export function clearAllCache() {
-    project.clearAllCache(scene, currentObjects)
+    project.clearAllCache(groupItems, currentObjects)
     alert('In-memory cache cleared. Click "Run" to re-render.')
 }
 
@@ -1344,6 +1276,7 @@ export function initialize(domElements) {
     animate = domElements.animate
     showView = domElements.showView
     scene = domElements.scene
+	groupItems = domElements.groupItems
     currentObjects = []
 
     // Initialization of ScadProject uses the default data

@@ -442,6 +442,7 @@
             var domElements
             var renderer
             var scene
+			var groupItems
             var camera
             var controls
             var keyLight
@@ -479,6 +480,9 @@
                 renderer.setPixelRatio(window.devicePixelRatio)
 
                 scene = new THREE.Scene()
+				groupItems = new THREE.Group();
+				groupItems. rotation.x=-Math.PI/2;
+				scene.add(groupItems)
                 camera = new THREE.PerspectiveCamera(
                     60,
                     window.innerWidth / window.innerHeight,
@@ -742,6 +746,9 @@
                     get scene() {
                         return scene
                     },
+					get groupItems() {
+						return groupItems
+					},
                     showView: showView
                 }
 
