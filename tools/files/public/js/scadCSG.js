@@ -385,14 +385,17 @@ function align(config = {}, target) {
 function path3d(path) {
     const paths = path.path
     const fn = path.fn
+    if (path.xyInitAng === undefined) {
+        path.xyInitAng = true
+    }
 
     var newPath = {
         p: [], // Points (x, y, z)
         r: [], // 2d Rotations
         s: [], // 2d Scales
         n: [], // Normals (Tangents/Up Vectors)
-		close:path.close,
-		xyInitAng:path.xyInitAng
+        close: path.close,
+        xyInitAng: path.xyInitAng
     }
 
     // ----------------------------------------------------------------------
@@ -1555,7 +1558,6 @@ function convertTo2d(path) {
 }
 
 function convertTo3d(path, z = 0) {
-	
     const newPath = []
     let i = 0
     while (i < path.length) {
@@ -1576,10 +1578,10 @@ function convertTo3d(path, z = 0) {
                 newPath.push(
                     path[i + 1],
                     path[i + 2],
-					z,
+                    z,
                     path[i + 3],
                     path[i + 4],
-					z,
+                    z
                 ) // Add Z for CPs and EP
                 i += 5
                 break
@@ -1588,13 +1590,13 @@ function convertTo3d(path, z = 0) {
                 newPath.push(
                     path[i + 1],
                     path[i + 2],
-					z,
+                    z,
                     path[i + 3],
                     path[i + 4],
-					z,
+                    z,
                     path[i + 5],
                     path[i + 6],
-					z
+                    z
                 ) // Add Z for CPs and EP
                 i += 7
                 break
@@ -1617,7 +1619,30 @@ function convertTo3d(path, z = 0) {
 
 //*/
 
-/* eslint-disable */
+
+
+
+
+
+//work on helper path functions
+
+function arch2dSmooth()
+{
+	
+	
+	
+}
+
+function quadraticSmothing()
+{
+	
+
+}
+
+
+
+
+
 function arcPath3d(config) {
     const { startAng, endAng, fn, d } = config
 
@@ -1656,8 +1681,6 @@ function arcPath3d(config) {
 
 ////////////////////////////////
 
-
-
 /**
 helper function for linePaths3d.
  * @param {THREE.Vector3} vector - The vector to be rotated (mutated in place).
@@ -1666,15 +1689,15 @@ helper function for linePaths3d.
  */
 function applyQuaternion(vector, quaternion) {
     // Treat the vector as a pure quaternion: p = (vector.x, vector.y, vector.z, 0)
-    const x = vector.x;
-    const y = vector.y;
-    const z = vector.z;
+    const x = vector.x
+    const y = vector.y
+    const z = vector.z
 
     // Quaternion components: q = (quaternion.x, quaternion.y, quaternion.z, quaternion.w)
-    const qx = quaternion.x;
-    const qy = quaternion.y;
-    const qz = quaternion.z;
-    const qw = quaternion.w;
+    const qx = quaternion.x
+    const qy = quaternion.y
+    const qz = quaternion.z
+    const qw = quaternion.w
 
     // The calculation simplifies the full conjugation (q * p * q_inverse)
     // for the case where p is a pure quaternion and q is a unit quaternion (normalized).
@@ -1682,25 +1705,23 @@ function applyQuaternion(vector, quaternion) {
     // --- Calculate q * p ---
     // The result is a new quaternion t = (tx, ty, tz, tw)
 
-    const tw = - qx * x - qy * y - qz * z;
-    const tx =   qw * x + qy * z - qz * y;
-    const ty =   qw * y - qx * z + qz * x;
-    const tz =   qw * z + qx * y - qy * x;
+    const tw = -qx * x - qy * y - qz * z
+    const tx = qw * x + qy * z - qz * y
+    const ty = qw * y - qx * z + qz * x
+    const tz = qw * z + qx * y - qy * x
 
     // --- Calculate t * q_inverse (which is t * conjugate(q) for a unit quaternion) ---
     // q_inverse = ( -qx, -qy, -qz, qw )
     // The result is the rotated pure quaternion p' = (px', py', pz', 0)
     // The new vector components (x', y', z') are (px', py', pz')
 
-    vector.x = tx * qw + tw * (-qx) + ty * (-qz) - tz * (-qy);
-    vector.y = ty * qw + tw * (-qy) + tz * (-qx) - tx * (-qz);
-    vector.z = tz * qw + tw * (-qz) + tx * (-qy) - ty * (-qx);
+    vector.x = tx * qw + tw * -qx + ty * -qz - tz * -qy
+    vector.y = ty * qw + tw * -qy + tz * -qx - tx * -qz
+    vector.z = tz * qw + tw * -qz + tx * -qy - ty * -qx
     // The scalar component will be zero, which confirms it's a pure quaternion (a vector).
 
-    return vector;
+    return vector
 }
-
-
 
 /**
  * @param {object} target - The parent object to which the shapes are applied.
@@ -1712,8 +1733,8 @@ function applyQuaternion(vector, quaternion) {
 
 function linePaths3d(target, commandPath) {
     var path = path3d(commandPath)
-	let close =path.close;
-	
+    let close = path.close
+
     //jlog("path", path)
     // This part of the code is not being modified, but it's included for context
     var shapes = []
@@ -1738,28 +1759,23 @@ function linePaths3d(target, commandPath) {
     // Calculate delta x (dx) and delta y (dy)
     const dx = p2[0] - p1[0] // x2 - x1
     const dy = p2[1] - p1[1] // y2 - y1
-	
-	
+
     // Calculate the angle using Math.atan2(dy, dx).
     // This gives the angle in radians on the X-Y plane (3D printer coordinates).
     // This angle corresponds to rotating the shape around the Y-axis.
-    let initialRotationRadians;
-	if(path.xyInitAng)
-	{
-		initialRotationRadians = Math.atan2(dy, dx) - Math.PI;
-	}
-	else
-	{
-		initialRotationRadians = Math.PI/2
-	}
+    let initialRotationRadians
+    if (path.xyInitAng) {
+        initialRotationRadians = Math.atan2(dy, dx) - Math.PI
+    } else {
+        initialRotationRadians = Math.PI / 2
+    }
 
-	//const initialRotationRadians = Math.PI/2
-	
+    //const initialRotationRadians = Math.PI/2
+
     const cosR = Math.cos(initialRotationRadians)
     const sinR = Math.sin(initialRotationRadians)
     // --- End of Calculation ---
-	
-	
+
     for (var i = 0; i < path.p.length; i++) {
         points3d.push(...[0, 0, i])
 
@@ -1780,7 +1796,7 @@ function linePaths3d(target, commandPath) {
         )
 
         //upVector.applyQuaternion(o.quaternion)
-		applyQuaternion(upVector, o.quaternion)
+        applyQuaternion(upVector, o.quaternion)
 
         preCalc.push(o)
     }
@@ -1793,20 +1809,13 @@ function linePaths3d(target, commandPath) {
         )
         return null
     }
-	
-	
-	//apply the point3d 
-	//const setOrintation
-	
-	
-	
+
     //helper function to generate geometries from a shape
     const genFromShape = (shape) => {
         var geometry = new THREE.BufferGeometry()
-        var vertices = [];
-        var indices = [];
-		var uvs = [];
-		
+        var vertices = []
+        var indices = []
+        var uvs = []
 
         let vertexCount = 0 // Current index for the next vertex to be added
 
@@ -1815,10 +1824,10 @@ function linePaths3d(target, commandPath) {
         const shapeData = shape.extractPoints(1)
         const contourPoints = shapeData.shape // Outer path (THREE.Vector2 array)
         const holePoints = shapeData.holes // Array of hole paths (Array of THREE.Vector2 arrays)
-		
-		// --- NEW: Rotate Shape Points ---
+
+        // --- NEW: Rotate Shape Points ---
         // Rotate the primary shape points
-		
+
         for (const point of contourPoints) {
             const x = point.x
             const y = point.y
@@ -1835,194 +1844,180 @@ function linePaths3d(target, commandPath) {
                 point.y = x * sinR + y * cosR
             }
         }
-		
-        // --- END NEW: Rotate Shape Points ---
 
-		
-		
-		
-		
-		
+        // --- END NEW: Rotate Shape Points ---
 
         // --- 2. Triangulate the 2D shape for the caps ---
         const capTriangles = THREE.ShapeUtils.triangulateShape(
             contourPoints,
             holePoints
         )
-		
-		// Get bounding box of the 2D shape for normalized Cap UVs
-    	const allPoints = [contourPoints, ...holePoints].flat();
-	    const minX = Math.min(...allPoints.map(p => p.x));
-	    const maxX = Math.max(...allPoints.map(p => p.x));
-	    const minY = Math.min(...allPoints.map(p => p.y));
-	    const maxY = Math.max(...allPoints.map(p => p.y));
-	    const width = maxX - minX;
-	    const height = maxY - minY;
-		const segments = (points3d.length/3)-1;
-		
-		
-		
-		const calcFinalPoint=(point , i) =>{
-			
-			//================================
-					//set the orintations here
-		            // Get the local cross-section coordinates from the extruded geometry.
-					
-					var x = point.x;//sp.getX(i)
-		            var y = point.y; // This is set to 0 to flatten out the cross section.
-		            var z = 0; //sp.getZ(i)
-					
-					
-					
-		            // Apply path.s for scale
-		            x = x * path.s[i][0]
-		            y = y * path.s[i][1]
-					
-					
-		            // Apply 2D rotation on X and Z
-		            //const rotation = path.r[yindex];
-		            var o = preCalc[i]
-		            //const cosR = Math.cos(rotation/180*Math.PI);
-		            //const sinR = Math.sin(rotation/180*Math.PI);
-		
-		            let rotatedX = x * o.cosR - y * o.sinR
-		            let rotatedY = x * o.sinR + y * o.cosR
-		
-		            x = rotatedX;
-		            y = rotatedY;
-					
-		            // Create a point in local space.
-		            const ppoint = new THREE.Vector3(x, y, z)
-		
-		            // Apply the 3D rotation to the point using the quaternion.
-		
-		            for (var k = 0; k <= i; k++) {
-		                //ppoint.applyQuaternion(preCalc[k].quaternion)
-						applyQuaternion(ppoint, preCalc[k].quaternion);
-		            }
-		
-		            // Apply the 3D translation from path.p[yindex]
-		            ppoint.x += path.p[i][0]
-		            ppoint.y += path.p[i][1]
-		            ppoint.z += path.p[i][2]
-			return ppoint;
-		}
-		
-		//////////////////////////
-		//add caps here
-		
-		
-		const addCap = (isTop) => {
-        	const capStartVertexCount = vertexCount;
-	        var i;
-			if(isTop) i= segments;
-			else i = 0;
-	        for (const point of allPoints) {
-				var ppoint=calcFinalPoint(point, i)
-	            vertices.push(ppoint.x, ppoint.y, ppoint.z);
-	            vertexCount++;
-	
-	            // UVs for Caps: Normalize X/Y coordinates to fit in the 0-1 UV space
-	            // U = (X - minX) / width
-	            // V = (Y - minY) / height
-	            uvs.push((point.x - minX) / width, (point.y - minY) / height); 
-	        }
-	
-	        // 4b. Generate Indices (Faces) (No change here from previous version)
-	        for (const tri of capTriangles) {
-	            const v1 = capStartVertexCount + tri[0];
-	            const v2 = capStartVertexCount + tri[1];
-	            const v3 = capStartVertexCount + tri[2];
-	
-	            if (isTop) {
-	                indices.push(v1, v2, v3);
-	            } else {
-	                indices.push(v1, v3, v2);
-	            }
-	        }
-	    };
-	
-	    // Add the top and bottom caps
-		if(!close) {
-	    	addCap(true);
-	    	addCap(false);
-		}
-		
-		
+
+        // Get bounding box of the 2D shape for normalized Cap UVs
+        const allPoints = [contourPoints, ...holePoints].flat()
+        const minX = Math.min(...allPoints.map((p) => p.x))
+        const maxX = Math.max(...allPoints.map((p) => p.x))
+        const minY = Math.min(...allPoints.map((p) => p.y))
+        const maxY = Math.max(...allPoints.map((p) => p.y))
+        const width = maxX - minX
+        const height = maxY - minY
+        const segments = points3d.length / 3 - 1
+
+        const calcFinalPoint = (point, i) => {
+            //================================
+            //set the orintations here
+            // Get the local cross-section coordinates from the extruded geometry.
+
+            var x = point.x //sp.getX(i)
+            var y = point.y // This is set to 0 to flatten out the cross section.
+            var z = 0 //sp.getZ(i)
+
+            // Apply path.s for scale
+            x = x * path.s[i][0]
+            y = y * path.s[i][1]
+
+            // Apply 2D rotation on X and Z
+            //const rotation = path.r[yindex];
+            var o = preCalc[i]
+            //const cosR = Math.cos(rotation/180*Math.PI);
+            //const sinR = Math.sin(rotation/180*Math.PI);
+
+            let rotatedX = x * o.cosR - y * o.sinR
+            let rotatedY = x * o.sinR + y * o.cosR
+
+            x = rotatedX
+            y = rotatedY
+
+            // Create a point in local space.
+            const ppoint = new THREE.Vector3(x, y, z)
+
+            // Apply the 3D rotation to the point using the quaternion.
+
+            for (var k = 0; k <= i; k++) {
+                //ppoint.applyQuaternion(preCalc[k].quaternion)
+                applyQuaternion(ppoint, preCalc[k].quaternion)
+            }
+
+            // Apply the 3D translation from path.p[yindex]
+            ppoint.x += path.p[i][0]
+            ppoint.y += path.p[i][1]
+            ppoint.z += path.p[i][2]
+            return ppoint
+        }
+
+        //////////////////////////
+        //add caps here
+
+        const addCap = (isTop) => {
+            const capStartVertexCount = vertexCount
+            var i
+            if (isTop) i = segments
+            else i = 0
+            for (const point of allPoints) {
+                var ppoint = calcFinalPoint(point, i)
+                vertices.push(ppoint.x, ppoint.y, ppoint.z)
+                vertexCount++
+
+                // UVs for Caps: Normalize X/Y coordinates to fit in the 0-1 UV space
+                // U = (X - minX) / width
+                // V = (Y - minY) / height
+                uvs.push((point.x - minX) / width, (point.y - minY) / height)
+            }
+
+            // 4b. Generate Indices (Faces) (No change here from previous version)
+            for (const tri of capTriangles) {
+                const v1 = capStartVertexCount + tri[0]
+                const v2 = capStartVertexCount + tri[1]
+                const v3 = capStartVertexCount + tri[2]
+
+                if (isTop) {
+                    indices.push(v1, v2, v3)
+                } else {
+                    indices.push(v1, v3, v2)
+                }
+            }
+        }
+
+        // Add the top and bottom caps
+        if (!close) {
+            addCap(true)
+            addCap(false)
+        }
+
         // Helper function to generate side vertices and indices for one contour (outer or hole)
-	    const extrudeContour = (points, reverseWinding) => {
-	        const contourStartVertexCount = vertexCount;
-	        const numPoints = points.length;
-	
-	        // 3a. Calculate total length of this contour for side UVs
-	        let contourLength = 0;
-	        for (let i = 0; i < numPoints; i++) {
-	            const p1 = points[i];
-	            const p2 = points[(i + 1) % numPoints];
-	            contourLength += p1.distanceTo(p2);
-	        }
-	
-	        // 3b. Generate Vertices and UVs
-	        let u_current = 0; // The 'U' coordinate tracks distance along the contour
-	        
-	        for (let i = 0; i <= segments; i++) { // Loop depth segments (V coordinate)
-	            //const z = i;
-	            const v = 1 - (i / segments); // V coordinate: 1 at bottom, 0 at top
-	
-	            u_current = 0; // Reset U for each depth slice
-	
-	            for (let j = 0; j < numPoints; j++) { // Loop 2D points (U coordinate)
-	                const point = points[j];
-					
-					
-					
-					
-					var ppoint= calcFinalPoint(point, i)
-					
-					
-	
-	                // Positions
-					vertices.push(ppoint.x, ppoint.y, ppoint.z);
-	                
-					
-	                // UVs (U: distance along contour, V: distance along depth)
-	                uvs.push(u_current / contourLength, v); // U is normalized by total length
-	                vertexCount++;
-	                
-	                // Update U distance for the next point
-	                const p1 = points[j];
-	                const p2 = points[(j + 1) % numPoints];
-	                u_current += p1.distanceTo(p2);
-	            }
-	        }
-	
-	        // 3c. Generate Indices (Faces) (No change here from previous version)
-	        for (let i = 0; i < segments; i++) {
-	            for (let j = 0; j < numPoints; j++) {
-	                const idx_a = contourStartVertexCount + i * numPoints + j;
-	                const idx_b = contourStartVertexCount + i * numPoints + (j + 1) % numPoints;
-	                const idx_c = contourStartVertexCount + (i + 1) * numPoints + (j + 1) % numPoints;
-	                const idx_d = contourStartVertexCount + (i + 1) * numPoints + j;
-	
-	                if (reverseWinding) {
-	                    indices.push(idx_a, idx_d, idx_c);
-	                    indices.push(idx_a, idx_c, idx_b);
-	                } else {
-						
-	                    indices.push(idx_a, idx_b, idx_c);
-	                    indices.push(idx_a, idx_c, idx_d);
-						
-	                }
-	            }
-	        }
-	    };
+        const extrudeContour = (points, reverseWinding) => {
+            const contourStartVertexCount = vertexCount
+            const numPoints = points.length
+
+            // 3a. Calculate total length of this contour for side UVs
+            let contourLength = 0
+            for (let i = 0; i < numPoints; i++) {
+                const p1 = points[i]
+                const p2 = points[(i + 1) % numPoints]
+                contourLength += p1.distanceTo(p2)
+            }
+
+            // 3b. Generate Vertices and UVs
+            let u_current = 0 // The 'U' coordinate tracks distance along the contour
+
+            for (let i = 0; i <= segments; i++) {
+                // Loop depth segments (V coordinate)
+                //const z = i;
+                const v = 1 - i / segments // V coordinate: 1 at bottom, 0 at top
+
+                u_current = 0 // Reset U for each depth slice
+
+                for (let j = 0; j < numPoints; j++) {
+                    // Loop 2D points (U coordinate)
+                    const point = points[j]
+
+                    var ppoint = calcFinalPoint(point, i)
+
+                    // Positions
+                    vertices.push(ppoint.x, ppoint.y, ppoint.z)
+
+                    // UVs (U: distance along contour, V: distance along depth)
+                    uvs.push(u_current / contourLength, v) // U is normalized by total length
+                    vertexCount++
+
+                    // Update U distance for the next point
+                    const p1 = points[j]
+                    const p2 = points[(j + 1) % numPoints]
+                    u_current += p1.distanceTo(p2)
+                }
+            }
+
+            // 3c. Generate Indices (Faces) (No change here from previous version)
+            for (let i = 0; i < segments; i++) {
+                for (let j = 0; j < numPoints; j++) {
+                    const idx_a = contourStartVertexCount + i * numPoints + j
+                    const idx_b =
+                        contourStartVertexCount +
+                        i * numPoints +
+                        ((j + 1) % numPoints)
+                    const idx_c =
+                        contourStartVertexCount +
+                        (i + 1) * numPoints +
+                        ((j + 1) % numPoints)
+                    const idx_d =
+                        contourStartVertexCount + (i + 1) * numPoints + j
+
+                    if (reverseWinding) {
+                        indices.push(idx_a, idx_d, idx_c)
+                        indices.push(idx_a, idx_c, idx_b)
+                    } else {
+                        indices.push(idx_a, idx_b, idx_c)
+                        indices.push(idx_a, idx_c, idx_d)
+                    }
+                }
+            }
+        }
 
         // Extrude main outline and then all holes
         extrudeContour(contourPoints, false)
         for (const hole of holePoints) {
             extrudeContour(hole, true)
         }
-		
 
         // --- 6. Finalize Geometry (Indexed BufferGeometry) ---
         geometry.setIndex(indices)
@@ -2030,247 +2025,26 @@ function linePaths3d(target, commandPath) {
             'position',
             new THREE.Float32BufferAttribute(vertices, 3)
         )
-		
-		//<-- CRITICAL STEP: Set the UV attribute
-    	geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2)); 
-    
-		
+
+        //<-- CRITICAL STEP: Set the UV attribute
+        geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2))
+
         geometry.computeVertexNormals()
 
         //return geometry
-		return new THREE.Mesh(geometry, defaultMaterial.clone());
+        return new THREE.Mesh(geometry, defaultMaterial.clone())
     }
 
     for (const shape of shapes) {
         meshes.push(genFromShape(shape))
     }
-	
 
     // Return the array of meshes.
     return meshes
 }
-
-
-//*/
-
-
-
-
-
 
 ///////////////////////////////////
 
-/**
- * @param {object} target - The parent object to which the shapes are applied.
- * @param {object} path - The pre-processed path data containing points, rotations, and normals.
- * @param {boolean} close - A flag to indicate if the path should be closed.
- * @returns {THREE.Mesh[]} An array of THREE.js meshes.
- */
-//old good
-
-function linePaths3dG(target, commandPath, close) {
-    var path = path3d(commandPath)
-    //PrintLog(JSON.stringify(path));
-    // This part of the code is not being modified, but it's included for context
-    var shapes = []
-    applyToShape(target, (item) => {
-        shapes.push(item)
-    })
-
-    var points3d = []
-
-    var preCalc = []
-
-    var upVector = new THREE.Vector3(0, 1, 0)
-
-    // --- Calculation for Initial Rotation from path.p ---
-
-    // Get the first two points from the path.p array
-    // path.p[i] is [x, y, z] in 3D printer coordinates,
-    // where x and y are the planar coordinates (ground plane).
-    const p1 = path.p[0]
-    const p2 = path.p[1]
-
-    // Calculate delta x (dx) and delta y (dy)
-    const dx = p2[0] - p1[0] // x2 - x1
-    const dy = p2[2] - p1[2] // z2 - z1
-
-    // Calculate the angle using Math.atan2(dy, dx).
-    // This gives the angle in radians on the X-Y plane (3D printer coordinates).
-    // This angle corresponds to rotating the shape around the Y-axis.
-    const initialRotationRadians = -Math.atan2(dy, dx) + Math.PI / 2
-
-    const cosR = Math.cos(initialRotationRadians)
-    const sinR = Math.sin(initialRotationRadians)
-    // --- End of Calculation ---
-
-    for (var i = 0; i < path.p.length; i++) {
-        points3d.push(...[0, 0, i])
-
-        // Apply 2D rotation on X and Z
-        const rotation = path.r[i]
-
-        var o = {}
-        o.cosR = Math.cos((rotation / 180) * Math.PI)
-        o.sinR = Math.sin((rotation / 180) * Math.PI)
-
-        // Now, we need to apply the 3D rotation from the normals and translation.
-        // Create a quaternion to handle the 3D orientation.
-        const normal = new THREE.Vector3().fromArray(path.n[i])
-        //const upVector = new THREE.Vector3(0, 1, 0);
-        o.quaternion = new THREE.Quaternion().setFromUnitVectors(
-            upVector,
-            normal
-        )
-
-        upVector.applyQuaternion(o.quaternion)
-
-        preCalc.push(o)
-    }
-
-    const meshes = [] // An array to store all the created meshes
-
-    if (!points3d || points3d.length < 6) {
-        PrintWarn(
-            'linePaths3d requires at least 6 numbers (2 points) for the 3D extrusion path.'
-        )
-        return null
-    }
-
-    const extrudePath = new THREE.CurvePath()
-
-    // Iterate through the flattened array, jumping by 3 for each point
-    for (let i = 0; i < points3d.length - 3; i += 3) {
-        const startPointIndex = i
-        const endPointIndex = i + 3
-
-        const startVector = new THREE.Vector3(
-            points3d[startPointIndex],
-            points3d[startPointIndex + 2],
-            points3d[startPointIndex + 1]
-        )
-        const endVector = new THREE.Vector3(
-            points3d[endPointIndex],
-            points3d[endPointIndex + 2],
-            points3d[endPointIndex + 1]
-        )
-
-        extrudePath.add(new THREE.LineCurve3(startVector, endVector))
-    }
-    
-
-    const numPoints = points3d.length / 3
-
-    const extrudeSettings = {
-        //steps: close ? numPoints : numPoints - 1,
-        steps: numPoints - 1,
-        bevelEnabled: false,
-        extrudePath: extrudePath,
-        capStart: false,
-        capEnd: false
-    }
-
-    // --- Mesh Creation Loop (Applying Shape Rotation) ---
-    for (const shape of shapes) {
-        const fn = shape.userData && shape.userData.fn ? shape.userData.fn : 30
-        const shapePoints = shape.extractPoints(fn)
-
-        // --- NEW: Rotate Shape Points ---
-        // Rotate the primary shape points
-        for (const point of shapePoints.shape) {
-            const x = point.x
-            const y = point.y
-            point.x = x * cosR - y * sinR
-            point.y = x * sinR + y * cosR
-        }
-
-        // Rotate the hole points
-        for (const hole of shapePoints.holes) {
-            for (const point of hole) {
-                const x = point.x
-                const y = point.y
-                point.x = x * cosR - y * sinR
-                point.y = x * sinR + y * cosR
-            }
-        }
-        // --- END NEW: Rotate Shape Points ---
-
-        const extrudedShape = new THREE.Shape(shapePoints.shape)
-        extrudedShape.holes = shapePoints.holes.map(
-            (hole) => new THREE.Path(hole)
-        )
-        const geometry = new THREE.ExtrudeGeometry(
-            extrudedShape,
-            extrudeSettings
-        )
-        const mesh = new THREE.Mesh(geometry, defaultMaterial.clone())
-
-        // OLD: mesh.rotateY(initialRotationRadians); is REMOVED
-
-        meshes.push(mesh)
-    }
-
-    // The completed section starts here.
-    for (const mesh of meshes) {
-        const sp = mesh.geometry.attributes.position
-        for (var i = 0; i < sp.count; i++) {
-            var yindex = sp.getY(i)
-            //PrintLog("i"+i)
-
-            //PrintLog('yindez:' + yindex)
-            // Get the local cross-section coordinates from the extruded geometry.
-            var x = sp.getX(i)
-            var y = 0 // This is set to 0 to flatten out the cross section.
-            var z = sp.getZ(i)
-
-            // Apply path.s for scale
-            x = x * path.s[yindex][0]
-            z = z * path.s[yindex][1]
-
-            // Apply 2D rotation on X and Z
-            //const rotation = path.r[yindex];
-            var o = preCalc[yindex]
-            //const cosR = Math.cos(rotation/180*Math.PI);
-            //const sinR = Math.sin(rotation/180*Math.PI);
-
-            let rotatedX = x * o.cosR - z * o.sinR
-            let rotatedZ = x * o.sinR + z * o.cosR
-
-            x = rotatedX
-            z = rotatedZ
-
-            // Now, we need to apply the 3D rotation from the normals and translation.
-            // Create a quaternion to handle the 3D orientation.
-            //const normal = new THREE.Vector3().fromArray(path.n[yindex]);
-            //const upVector = new THREE.Vector3(0, 1, 0);
-            //const quaternion = new THREE.Quaternion().setFromUnitVectors(upVector, normal);
-
-            // Create a point in local space.
-            const point = new THREE.Vector3(x, y, z)
-
-            // Apply the 3D rotation to the point using the quaternion.
-
-            for (var k = 0; k <= yindex; k++) {
-                //point.applyQuaternion(o.quaternion)
-
-                point.applyQuaternion(preCalc[k].quaternion)
-            }
-
-            // Apply the 3D translation from path.p[yindex]
-            point.x += path.p[yindex][0]
-            point.y += path.p[yindex][1]
-            point.z += path.p[yindex][2]
-
-            // Update the geometry's attributes.
-            sp.setX(i, point.x)
-            sp.setY(i, point.y)
-            sp.setZ(i, point.z)
-        }
-    }
-
-    // Return the array of meshes.
-    return meshes
-}
 
 //*/
 
@@ -2769,9 +2543,9 @@ function placement(offsets = {}, obj, ...target) {
             const axisLetter = cmd[2]
 
             if (axisLetter === 'x') {
-				xx=offsetValue;
+                xx = offsetValue
                 if (objAnchor == 'l') {
-                    ox = objBounds.min.x;
+                    ox = objBounds.min.x
                 } else if (objAnchor === 'c') {
                     ox = (objBounds.min.x + objBounds.max.x) / 2
                 } else if (objAnchor == 'r') {
@@ -2786,7 +2560,7 @@ function placement(offsets = {}, obj, ...target) {
                     tx = targetBounds.max.x
                 }
             } else if (axisLetter === 'y') {
-				yy=offsetValue;
+                yy = offsetValue
                 if (objAnchor == 'd') {
                     oy = objBounds.min.y
                 } else if (objAnchor === 'c') {
@@ -2803,7 +2577,7 @@ function placement(offsets = {}, obj, ...target) {
                     ty = targetBounds.max.y
                 }
             } else if (axisLetter === 'z') {
-				zz=offsetValue;
+                zz = offsetValue
                 if (objAnchor == 'b') {
                     oz = objBounds.min.z
                 } else if (objAnchor === 'c') {
@@ -2820,8 +2594,6 @@ function placement(offsets = {}, obj, ...target) {
                     tz = targetBounds.max.z
                 }
             }
-
-            
         }
     }
 
@@ -4092,18 +3864,67 @@ async function importFbx(filePath) {
 
 //*/
 
+
+
+
+
+
+
+
+
+
+// Add a constant for three.js class names for cleaner checks
+const THREE_TYPES_TO_CLONE = ['Mesh', 'Shape', 'Brush', 'Group', 'Object3D', 'BufferAttribute'];
+
 /**
- * Recursively deep clones a THREE.js object, THREE.Shape, three-bvh-csg Brush,
- * or an array/object containing them.
- *
- * It ensures a "true clone" for THREE.Mesh by also cloning its geometry
- * to guarantee independence of geometry (including normals) and materials.
+ * Helper function to perform targeted deep cloning of BufferGeometry properties.
+ * This function bypasses the generic property copy for geometry structures.
+ * @param {THREE.BufferGeometry} sourceGeometry - The geometry to clone.
+ * @returns {THREE.BufferGeometry} The fully cloned geometry.
+ */
+function cloneGeometryData(sourceGeometry) {
+    // 1. Start with the built-in clone (this copies the structure and references)
+    const clonedGeometry = sourceGeometry.clone(); 
+    
+    // 2. Explicitly deep clone the index (if it exists)
+    // geometry.index is a BufferAttribute, which is handled by the main clone() function.
+    if (sourceGeometry.index) {
+        clonedGeometry.index = clone(sourceGeometry.index);
+    }
+
+    // 3. Explicitly deep clone all attributes (positions, normals, uvs, etc.)
+    // These are also BufferAttributes, handled by the main clone() function.
+    for (const name in sourceGeometry.attributes) {
+        // Ensure only own properties are copied
+        if (Object.prototype.hasOwnProperty.call(sourceGeometry.attributes, name)) {
+            clonedGeometry.attributes[name] = clone(sourceGeometry.attributes[name]);
+        }
+    }
+    
+    // 4. Copy Bounding Boxes/Spheres (these are simple objects/vectors)
+    if (sourceGeometry.boundingBox) {
+        clonedGeometry.boundingBox = sourceGeometry.boundingBox.clone();
+    }
+    if (sourceGeometry.boundingSphere) {
+        clonedGeometry.boundingSphere = sourceGeometry.boundingSphere.clone();
+    }
+    
+    // Other properties like groups, morphAttributes, etc., might also need deep cloning 
+    // if your application uses them. For core vertex/index data, the above is sufficient.
+
+    return clonedGeometry;
+}
+
+
+/**
+ * Recursively deep clones a THREE.js object.
+ * (Modified to use targeted geometry cloning)
  *
  * @param {THREE.Mesh | THREE.Shape | Brush | Array | Object} source - The object to clone.
  * @returns {THREE.Mesh | THREE.Shape | Brush | Array | Object} The cloned object.
  */
 export function clone(source) {
-    // 1. Handle primitives (base case for recursion)
+    // 1. Handle primitives
     if (source === null || typeof source !== 'object') {
         return source
     }
@@ -4118,35 +3939,69 @@ export function clone(source) {
         }
         return clonedArray
     }
-
-    // 3. Handle specific THREE.js objects and Brush (objects with a .clone() method)
-    if (
-        typeName === 'Mesh' ||
-        typeName === 'Shape' ||
-        typeName === 'Brush' ||
-        typeName === 'Group' ||
-        typeName === 'Object3D'
-    ) {
-        // Use the built-in clone() method first.
-        const clonedObject = source.clone()
-
-        // 💡 CRITICAL ADDITION for "true clone": Deeply clone geometry for THREE.Mesh.
-        // This ensures the cloned object has its own, independent geometry and normals.
-        // It relies on BufferGeometry having a .clone() method.
-        if (typeName === 'Mesh' && clonedObject.geometry) {
-            // Check if the geometry itself has a .clone method (e.g., BufferGeometry)
-            if (typeof clonedObject.geometry.clone === 'function') {
-                clonedObject.geometry = clonedObject.geometry.clone()
-            } else {
-                console.warn(
-                    `clone: Mesh geometry of type ${clonedObject.geometry.constructor.name} does not have a .clone() method. Geometry is shared.`
-                )
-            }
+    
+    // 3. Handle specific THREE.js objects
+    if (THREE_TYPES_TO_CLONE.includes(typeName)) {
+        
+        // --- CRITICAL CASE: BufferAttribute (for Vertices and Indices data) ---
+        if (typeName === 'BufferAttribute') {
+            const sourceAttr = source;
+            // Use BufferAttribute's built-in clone() for the object structure.
+            const clonedAttr = sourceAttr.clone(); 
+            
+            // ⚠️ Force the deepest possible copy of the underlying typed array data.
+            const dataArray = sourceAttr.array;
+            const ClonedDataType = dataArray.constructor;
+            // Create a new ArrayBuffer from the original data
+            clonedAttr.array = new ClonedDataType(dataArray); 
+            
+            return clonedAttr;
         }
 
-        // THREE.js built-in clone already deep-clones materials for Mesh.
-        // The children of Groups/Object3D are also handled by the built-in clone.
+        // --- Special case: THREE.Mesh (Manual construction using targeted geometry clone) ---
+        if (typeName === 'Mesh') {
+            const sourceMesh = source
+            let clonedGeometry = sourceMesh.geometry;
+            let clonedMaterial = sourceMesh.material;
+            
+            // 1. Clone Geometry using the dedicated function
+            if (clonedGeometry) {
+                clonedGeometry = cloneGeometryData(clonedGeometry);
+            }
+            
+            // 2. Clone Material(s)
+            if (Array.isArray(sourceMesh.material)) {
+                clonedMaterial = sourceMesh.material.map(m => m.clone())
+            } else if (sourceMesh.material && typeof sourceMesh.material.clone === 'function') {
+                clonedMaterial = sourceMesh.material.clone()
+            }
 
+            // 3. Create NEW Mesh instance
+            // Assuming THREE is available.
+            const clonedObject = new THREE.Mesh(clonedGeometry, clonedMaterial) 
+            clonedObject.copy(sourceMesh) // Copy object properties (pos/rot/scale/etc)
+            
+            // Re-assign cloned components to be absolutely sure
+            clonedObject.geometry = clonedGeometry
+            clonedObject.material = clonedMaterial
+
+            // 4. Clone children
+            for (let i = 0; i < sourceMesh.children.length; i++) {
+                clonedObject.add(clone(sourceMesh.children[i]))
+            }
+            
+            return clonedObject
+        }
+        
+        // --- Case for Shape/Brush/Group/Object3D ---
+        const clonedObject = source.clone()
+        // Manually replace children with deep clones
+        if (clonedObject.children) {
+            clonedObject.children.length = 0
+            for (let i = 0; i < source.children.length; i++) {
+                clonedObject.add(clone(source.children[i]))
+            }
+        }
         return clonedObject
     }
 
@@ -4154,21 +4009,26 @@ export function clone(source) {
     if (typeName === 'Object') {
         const clonedObject = {}
         for (const key in source) {
-            // Ensure we only process own properties
             if (Object.prototype.hasOwnProperty.call(source, key)) {
-                // Recursively clone the property value
                 clonedObject[key] = clone(source[key])
             }
         }
         return clonedObject
     }
 
-    // 5. Fallback for other non-clonable objects
+    // 5. Fallback
     console.warn(
         `clone: Cannot deep clone object of type: ${typeName}. Returning original reference.`
     )
     return source
 }
+
+
+
+
+
+
+
 
 // Private object containing all exportable functions
 // This is a private, self-contained list within the module.
@@ -4193,7 +4053,6 @@ const _exportedFunctions = {
     convertTo3d,
     arcPath3d,
     linePaths3d, // this is the new linePaths3dEx
-	linePaths3dG,
     scaleTo,
     scaleAdd,
     show,
