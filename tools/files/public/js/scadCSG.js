@@ -1737,7 +1737,7 @@ function linePaths3d(target, commandPath) {
 
     var preCalc = []
 
-    var upVector = new THREE.Vector3(0, 0, -1)
+    var upVector = new THREE.Vector3(0, 0, 1)
 
     // --- Calculation for Initial Rotation from path.p ---
 
@@ -1924,7 +1924,7 @@ function linePaths3d(target, commandPath) {
                 const v3 = capStartVertexCount + tri[2]
 				
 				
-				if (!isTop) {
+				if (isTop) {
 					indices.push(v1, v2, v3)
                 } else {
 					indices.push(v1, v3, v2)
@@ -1997,7 +1997,7 @@ function linePaths3d(target, commandPath) {
                     const idx_d =
                         contourStartVertexCount + (i + 1) * numPoints + j
 					
-					if (reverseWinding) {
+					if (!reverseWinding) {
                         indices.push(idx_a, idx_d, idx_c)
                         indices.push(idx_a, idx_c, idx_b)
 					} else {
