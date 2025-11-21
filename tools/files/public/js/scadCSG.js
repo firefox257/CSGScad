@@ -234,7 +234,7 @@ function cylinder({ d, dt, db, r, rt, rb, h, fn } = {}) {
         new THREE.CylinderGeometry(topRadius, bottomRadius, h, fn)
     )
 
-    return new THREE.Mesh(geom, defaultMaterial.clone())
+    return rotate([-90,0,0], new THREE.Mesh(geom, defaultMaterial.clone()));
 }
 
 // --- Functional Transforms (Corrected for Z-up) ---
@@ -1619,29 +1619,11 @@ function convertTo3d(path, z = 0) {
 
 //*/
 
-
-
-
-
-
 //work on helper path functions
 
-function arch2dSmooth()
-{
-	
-	
-	
-}
+function arch2dSmooth() {}
 
-function quadraticSmothing()
-{
-	
-
-}
-
-
-
-
+function quadraticSmothing() {}
 
 function arcPath3d(config) {
     const { startAng, endAng, fn, d } = config
@@ -1763,8 +1745,10 @@ function linePaths3d(target, commandPath) {
     // Calculate the angle using Math.atan2(dy, dx).
     // This gives the angle in radians on the X-Y plane (3D printer coordinates).
     // This angle corresponds to rotating the shape around the Y-axis.
-    let initialRotationRadians
+    let initialRotationRadians;
+	let xyInitAngRev=false;
     if (path.xyInitAng) {
+		if(dy!=0||dx!=0) xyInitAngRev=true;
         initialRotationRadians = Math.atan2(dy, dx) - Math.PI
     } else {
         initialRotationRadians = Math.PI / 2
@@ -2001,14 +1985,26 @@ function linePaths3d(target, commandPath) {
                         ((j + 1) % numPoints)
                     const idx_d =
                         contourStartVertexCount + (i + 1) * numPoints + j
-
-                    if (reverseWinding) {
-                        indices.push(idx_a, idx_d, idx_c)
-                        indices.push(idx_a, idx_c, idx_b)
-                    } else {
-                        indices.push(idx_a, idx_b, idx_c)
-                        indices.push(idx_a, idx_c, idx_d)
-                    }
+					if(!xyInitAngRev){
+						if (reverseWinding) {
+                        	indices.push(idx_a, idx_d, idx_c)
+                        	indices.push(idx_a, idx_c, idx_b)
+						} else {
+                        	indices.push(idx_a, idx_b, idx_c)
+                        	indices.push(idx_a, idx_c, idx_d)
+						}
+					} else {
+						if (!reverseWinding) {
+                        	indices.push(idx_a, idx_d, idx_c)
+                        	indices.push(idx_a, idx_c, idx_b)
+						} else {
+                        	indices.push(idx_a, idx_b, idx_c)
+                        	indices.push(idx_a, idx_c, idx_d)
+						}
+					}
+					
+					
+					
                 }
             }
         }
@@ -2044,7 +2040,6 @@ function linePaths3d(target, commandPath) {
 }
 
 ///////////////////////////////////
-
 
 //*/
 
@@ -3864,17 +3859,15 @@ async function importFbx(filePath) {
 
 //*/
 
-
-
-
-
-
-
-
-
-
 // Add a constant for three.js class names for cleaner checks
-const THREE_TYPES_TO_CLONE = ['Mesh', 'Shape', 'Brush', 'Group', 'Object3D', 'BufferAttribute'];
+const THREE_TYPES_TO_CLONE = [
+    'Mesh',
+    'Shape',
+    'Brush',
+    'Group',
+    'Object3D',
+    'BufferAttribute'
+]
 
 /**
  * Helper function to perform targeted deep cloning of BufferGeometry properties.
@@ -3884,37 +3877,43 @@ const THREE_TYPES_TO_CLONE = ['Mesh', 'Shape', 'Brush', 'Group', 'Object3D', 'Bu
  */
 function cloneGeometryData(sourceGeometry) {
     // 1. Start with the built-in clone (this copies the structure and references)
-    const clonedGeometry = sourceGeometry.clone(); 
-    
+    const clonedGeometry = sourceGeometry.clone()
+
     // 2. Explicitly deep clone the index (if it exists)
     // geometry.index is a BufferAttribute, which is handled by the main clone() function.
     if (sourceGeometry.index) {
-        clonedGeometry.index = clone(sourceGeometry.index);
+        clonedGeometry.index = clone(sourceGeometry.index)
     }
 
     // 3. Explicitly deep clone all attributes (positions, normals, uvs, etc.)
     // These are also BufferAttributes, handled by the main clone() function.
     for (const name in sourceGeometry.attributes) {
         // Ensure only own properties are copied
-        if (Object.prototype.hasOwnProperty.call(sourceGeometry.attributes, name)) {
-            clonedGeometry.attributes[name] = clone(sourceGeometry.attributes[name]);
+        if (
+            Object.prototype.hasOwnProperty.call(
+                sourceGeometry.attributes,
+                name
+            )
+        ) {
+            clonedGeometry.attributes[name] = clone(
+                sourceGeometry.attributes[name]
+            )
         }
     }
-    
+
     // 4. Copy Bounding Boxes/Spheres (these are simple objects/vectors)
     if (sourceGeometry.boundingBox) {
-        clonedGeometry.boundingBox = sourceGeometry.boundingBox.clone();
+        clonedGeometry.boundingBox = sourceGeometry.boundingBox.clone()
     }
     if (sourceGeometry.boundingSphere) {
-        clonedGeometry.boundingSphere = sourceGeometry.boundingSphere.clone();
+        clonedGeometry.boundingSphere = sourceGeometry.boundingSphere.clone()
     }
-    
-    // Other properties like groups, morphAttributes, etc., might also need deep cloning 
+
+    // Other properties like groups, morphAttributes, etc., might also need deep cloning
     // if your application uses them. For core vertex/index data, the above is sufficient.
 
-    return clonedGeometry;
+    return clonedGeometry
 }
-
 
 /**
  * Recursively deep clones a THREE.js object.
@@ -3939,48 +3938,50 @@ export function clone(source) {
         }
         return clonedArray
     }
-    
+
     // 3. Handle specific THREE.js objects
     if (THREE_TYPES_TO_CLONE.includes(typeName)) {
-        
         // --- CRITICAL CASE: BufferAttribute (for Vertices and Indices data) ---
         if (typeName === 'BufferAttribute') {
-            const sourceAttr = source;
+            const sourceAttr = source
             // Use BufferAttribute's built-in clone() for the object structure.
-            const clonedAttr = sourceAttr.clone(); 
-            
+            const clonedAttr = sourceAttr.clone()
+
             // ⚠️ Force the deepest possible copy of the underlying typed array data.
-            const dataArray = sourceAttr.array;
-            const ClonedDataType = dataArray.constructor;
+            const dataArray = sourceAttr.array
+            const ClonedDataType = dataArray.constructor
             // Create a new ArrayBuffer from the original data
-            clonedAttr.array = new ClonedDataType(dataArray); 
-            
-            return clonedAttr;
+            clonedAttr.array = new ClonedDataType(dataArray)
+
+            return clonedAttr
         }
 
         // --- Special case: THREE.Mesh (Manual construction using targeted geometry clone) ---
         if (typeName === 'Mesh') {
             const sourceMesh = source
-            let clonedGeometry = sourceMesh.geometry;
-            let clonedMaterial = sourceMesh.material;
-            
+            let clonedGeometry = sourceMesh.geometry
+            let clonedMaterial = sourceMesh.material
+
             // 1. Clone Geometry using the dedicated function
             if (clonedGeometry) {
-                clonedGeometry = cloneGeometryData(clonedGeometry);
+                clonedGeometry = cloneGeometryData(clonedGeometry)
             }
-            
+
             // 2. Clone Material(s)
             if (Array.isArray(sourceMesh.material)) {
-                clonedMaterial = sourceMesh.material.map(m => m.clone())
-            } else if (sourceMesh.material && typeof sourceMesh.material.clone === 'function') {
+                clonedMaterial = sourceMesh.material.map((m) => m.clone())
+            } else if (
+                sourceMesh.material &&
+                typeof sourceMesh.material.clone === 'function'
+            ) {
                 clonedMaterial = sourceMesh.material.clone()
             }
 
             // 3. Create NEW Mesh instance
             // Assuming THREE is available.
-            const clonedObject = new THREE.Mesh(clonedGeometry, clonedMaterial) 
+            const clonedObject = new THREE.Mesh(clonedGeometry, clonedMaterial)
             clonedObject.copy(sourceMesh) // Copy object properties (pos/rot/scale/etc)
-            
+
             // Re-assign cloned components to be absolutely sure
             clonedObject.geometry = clonedGeometry
             clonedObject.material = clonedMaterial
@@ -3989,10 +3990,10 @@ export function clone(source) {
             for (let i = 0; i < sourceMesh.children.length; i++) {
                 clonedObject.add(clone(sourceMesh.children[i]))
             }
-            
+
             return clonedObject
         }
-        
+
         // --- Case for Shape/Brush/Group/Object3D ---
         const clonedObject = source.clone()
         // Manually replace children with deep clones
@@ -4022,13 +4023,6 @@ export function clone(source) {
     )
     return source
 }
-
-
-
-
-
-
-
 
 // Private object containing all exportable functions
 // This is a private, self-contained list within the module.
