@@ -37,7 +37,7 @@ const defaultMaterial = new THREE.MeshStandardMaterial({
     color: 0xffcc00,
     metalness: 0.2,
     roughness: 0.6,
-    side: THREE.DoubleSide,
+    side: THREE.FrontSide,
     flatShading: true
 })
 
@@ -1198,36 +1198,37 @@ function path2d(path) {
         return points
     }
 
-    // ----------------------------------------------------------------------
-    // CORRECTED ARC SEGMENTATION LOGIC
-    // ----------------------------------------------------------------------
-    /**
+
+	
+	
+	    /**
      * Finds the center, radius, and segments for a circular arc defined by three points.
      * P0 (start), P1 (control on arc), P2 (end).
+     * The sign of the arc's sweep (CW vs. CCW) is determined by the turn P0->P1->P2.
      * @param {number[]} p0 - Start point [x, y].
-     * @param {number[]} p1 - Control point [x, y].
+     * @param {number[]} p1 - Control point [x, y] (must be on the desired arc).
      * @param {number[]} p2 - End point [x, y].
      * @param {number} segments - Number of line segments to use.
      * @returns {number[][]} An array of [x, y] segment points.
      */
     const getArcSegmentPoints = (p0, p1, p2, segments) => {
+        const PI2 = 2 * Math.PI
+
         // Fallback for collinear or degenerate points
-        const crossProduct =
+        const crossProductCheck =
             (p1[1] - p0[1]) * (p2[0] - p1[0]) -
             (p1[0] - p0[0]) * (p2[1] - p1[1])
-        if (Math.abs(crossProduct) < 1e-6) {
+        if (Math.abs(crossProductCheck) < 1e-6) {
             // Points are too close or collinear, fall back to a single line segment
-            return [p2]
+            // Note: This check only prevents finding the center, it doesn't solve clockness.
+            return [p2] 
         }
 
-        // 1. Get Midpoints M01 and M12
-        const m01 = [(p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2]
-        const m12 = [(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2]
+        // 1. Get Midpoints M01 and M12 (Not strictly needed, but kept for clarity of geometric derivation)
+        // const m01 = [(p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2]
+        // const m12 = [(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2]
 
-        // 2. Get Slopes of Perpendicular Bisectors
-        // General form of a line: Ax + By = C
-        // Perpendicular bisector of P_a P_b: (x_b - x_a)x + (y_b - y_a)y = (x_b^2 - x_a^2 + y_b^2 - y_a^2) / 2
-
+        // 2. Get Perpendicular Bisector Parameters (Ax + By = C)
         const A1 = p1[0] - p0[0]
         const B1 = p1[1] - p0[1]
         const C1 = (p1[0] ** 2 - p0[0] ** 2 + p1[1] ** 2 - p0[1] ** 2) / 2
@@ -1241,46 +1242,52 @@ function path2d(path) {
         // 3. Find Center (Intersection Point)
         const cx = (C1 * B2 - C2 * B1) / det
         const cy = (A1 * C2 - A2 * C1) / det
-        const center = [cx, cy]
+        // const center = [cx, cy]
 
         // 4. Calculate Radius
         const r = Math.hypot(p0[0] - cx, p0[1] - cy)
 
         // 5. Calculate Start, End, and Control Angles (normalized to 0 to 2*PI)
-        const PI2 = 2 * Math.PI
         const startAngle = (Math.atan2(p0[1] - cy, p0[0] - cx) + PI2) % PI2
-        let endAngle = (Math.atan2(p2[1] - cy, p2[0] - cx) + PI2) % PI2
+        const endAngle = (Math.atan2(p2[1] - cy, p2[0] - cx) + PI2) % PI2
         const controlAngle = (Math.atan2(p1[1] - cy, p1[0] - cx) + PI2) % PI2
 
-        // 6. Determine Arc Sweep
-        // 'sweep' is the angle from startAngle to endAngle in the CCW direction (0 to 2*PI)
-        let sweep = (endAngle - startAngle + PI2) % PI2
-
-        // controlAngle_rel is the angle of P1 relative to P0 in the CCW direction (0 to 2*PI)
+        // 6. Determine Arc Magnitude and Direction
+        
+        // a. Determine the **magnitude** of the arc that passes through P1
+        // 'arcMagnitude' is the positive angle from startAngle to endAngle that includes P1.
+        let arcMagnitude = (endAngle - startAngle + PI2) % PI2
         const controlAngle_rel = (controlAngle - startAngle + PI2) % PI2
 
-        // Check if the short sweep includes P1.
-        // If controlAngle_rel > sweep, it means P1 is on the *longer* arc.
-        // We need to add 2*PI to the sweep (or use the complementary angle).
-        if (controlAngle_rel > sweep) {
-            // The shortest arc does not contain P1. We need the long arc.
-            // We extend the sweep by 2*PI.
-            // For a full circle: P0=P2, P1 is not at P0. P1_rel > sweep (which is 0).
-            sweep = (endAngle - startAngle + PI2 * 3) % PI2 // This calculates the long sweep (sweep + 2*PI)
+        // Check if the short sweep includes P1. If not, use the long arc.
+        if (controlAngle_rel > arcMagnitude) {
+            // P1 is on the long arc (the complementary arc).
+            arcMagnitude = (endAngle - startAngle + PI2 * 3) % PI2
         }
 
-        // This ensures the arc is drawn in a counter-clockwise direction.
-        // If the path needs to be clockwise, swap P0 and P2 or negate the sweep.
-        // For standard path commands, we assume CCW is the desired path unless otherwise specified.
-
-        // If sweep is 0 (i.e., P0=P2, P1 is not P0), force a full 2*PI circle.
-        if (sweep < 1e-6 && Math.hypot(p0[0] - p2[0], p0[1] - p2[1]) < 1e-6) {
-            sweep = PI2
+        // If P0=P2 and P1 is not at P0, force a full 2*PI circle.
+        if (arcMagnitude < 1e-6 && Math.hypot(p0[0] - p2[0], p0[1] - p2[1]) < 1e-6) {
+            arcMagnitude = PI2
         }
+
+        // b. Determine the **sign** (clockness) based on the turn P0 -> P1 -> P2.
+        // This is the cross-product of vectors (P1-P0) and (P2-P0).
+        // Positive: CCW (Left turn), Negative: CW (Right turn)
+        const sweepSignCheck = 
+            (p1[0] - p0[0]) * (p2[1] - p0[1]) - (p1[1] - p0[1]) * (p2[0] - p0[0])
+
+        let sweep = arcMagnitude
+
+        if (sweepSignCheck < 0) {
+            // If the turn is Clockwise (CW), negate the sweep magnitude.
+            sweep = -arcMagnitude
+        } 
+        // Note: If sweepSignCheck > 0 (CCW), sweep remains positive (arcMagnitude).
 
         // 7. Generate Line Segments
         const segmentPoints = []
         for (let j = 1; j <= segments; j++) {
+            // Use the signed 'sweep' angle here
             const angle = startAngle + (sweep * j) / segments
             const x = cx + r * Math.cos(angle)
             const y = cy + r * Math.sin(angle)
@@ -1289,6 +1296,8 @@ function path2d(path) {
 
         return segmentPoints
     }
+
+	
     // ----------------------------------------------------------------------
     // END OF CORRECTED ARC SEGMENTATION LOGIC
     // ----------------------------------------------------------------------
@@ -1728,7 +1737,7 @@ function linePaths3d(target, commandPath) {
 
     var preCalc = []
 
-    var upVector = new THREE.Vector3(0, 0, 1)
+    var upVector = new THREE.Vector3(0, 0, -1)
 
     // --- Calculation for Initial Rotation from path.p ---
 
@@ -1739,17 +1748,17 @@ function linePaths3d(target, commandPath) {
     const p2 = path.p[1]
 
     // Calculate delta x (dx) and delta y (dy)
-    const dx = p2[0] - p1[0] // x2 - x1
-    const dy = p2[1] - p1[1] // y2 - y1
+    let dx = p2[0] - p1[0] // x2 - x1
+    let dy = p2[1] - p1[1] // y2 - y1
 
     // Calculate the angle using Math.atan2(dy, dx).
     // This gives the angle in radians on the X-Y plane (3D printer coordinates).
     // This angle corresponds to rotating the shape around the Y-axis.
-    let initialRotationRadians;
-	let xyInitAngRev=false;
+    let initialRotationRadians=0;
+	
     if (path.xyInitAng) {
-		if(dy!=0||dx!=0) xyInitAngRev=true;
-        initialRotationRadians = Math.atan2(dy, dx) - Math.PI
+		
+       	initialRotationRadians = Math.atan2(dy, dx) - Math.PI
     } else {
         initialRotationRadians = Math.PI / 2
     }
@@ -1913,12 +1922,14 @@ function linePaths3d(target, commandPath) {
                 const v1 = capStartVertexCount + tri[0]
                 const v2 = capStartVertexCount + tri[1]
                 const v3 = capStartVertexCount + tri[2]
-
-                if (isTop) {
-                    indices.push(v1, v2, v3)
+				
+				
+				if (!isTop) {
+					indices.push(v1, v2, v3)
                 } else {
-                    indices.push(v1, v3, v2)
+					indices.push(v1, v3, v2)
                 }
+				
             }
         }
 
@@ -1985,25 +1996,14 @@ function linePaths3d(target, commandPath) {
                         ((j + 1) % numPoints)
                     const idx_d =
                         contourStartVertexCount + (i + 1) * numPoints + j
-					if(!xyInitAngRev){
-						if (reverseWinding) {
-                        	indices.push(idx_a, idx_d, idx_c)
-                        	indices.push(idx_a, idx_c, idx_b)
-						} else {
-                        	indices.push(idx_a, idx_b, idx_c)
-                        	indices.push(idx_a, idx_c, idx_d)
-						}
+					
+					if (reverseWinding) {
+                        indices.push(idx_a, idx_d, idx_c)
+                        indices.push(idx_a, idx_c, idx_b)
 					} else {
-						if (!reverseWinding) {
-                        	indices.push(idx_a, idx_d, idx_c)
-                        	indices.push(idx_a, idx_c, idx_b)
-						} else {
-                        	indices.push(idx_a, idx_b, idx_c)
-                        	indices.push(idx_a, idx_c, idx_d)
-						}
+                        indices.push(idx_a, idx_b, idx_c)
+                        indices.push(idx_a, idx_c, idx_d)
 					}
-					
-					
 					
                 }
             }

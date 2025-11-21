@@ -2,7 +2,7 @@
   "csgCode": [
     {
       "title": "Work on",
-      "content": "\nvar p1={\n\n\tpath:[\n\t\t\"m\", 0,0,\n\t\t\"xr\", -10,10, 0, 20,\n\t\t\"xr\", 10,-10, 0,-20\n\t],\n\tfn:100\n\n};\n\n\nvar o1= linePaths3d(shape(p1), {\n\n\t\tpath:[\n\t\t\t\"m\", 0,0,0,\n\t\t\t\"lr\", 0,0,20\n\t\t]\n\n\t});\n//*/\n\n//var o1= cylinder({dt:20, db:15, h:20});\n\nvar p2={\n\n\tpath:[\n\n\t\t\"m\", 0.5,0,\n\t\t\"lr\", 0, -6,\n\t\t\"lr\", -3,3,\n\t\t\"lr\", 3,3\n\t\t//*/\n\n\t\t/*\n\t\t\"m\", 0.01,0,\n\t\t\"lr\",-3,-3,\n\t\t\"lr\",3,-3,\n\t\t\"lr\", 0,6\n\t\t//*/\n\n\t]\n\n}\n\nvar sh2 = shape(p2);\nvar o2 = linePaths3d(sh2, {\n\t\tpath: convertTo3d(p1.path),\n\t\tfn:100,\n\t\tclose:true\n\n\t});\n\n\nvar o3 = linePaths3d(sh2, {\n\t\tpath:[\n\t\t\t\"m\", 0,0,0,\n\t\t\t\"lr\", 0,0,5\n\t\t]\n\n\t});\n//*/\n\nplacement({ccx:0,ccy:0, ttz:-8},\n\to1,o2);\nplacement({ccx:0,ccy:0, ttz:1},\n\to1,o3);\n\n\nreturn difference(o1,o2, o3);\n\n\n\n\n\n\n"
+      "content": "\nvar p1={\n\n\tpath:[\n\t\t\"m\", 0,0,\n\t\t\"xr\", -10,10, 0, 20,\n\t\t\"xr\", 10,-10, 0,-20\n\t],\n\tfn:100\n\n};\n\nvar o1;\no1= linePaths3d(shape(p1), {\n\n\t\tpath:[\n\t\t\t\"m\", 0,0,0,\n\t\t\t\"lr\", 0,0,20\n\t\t]\n\n\t});\n//*/\no1= cylinder({dt:20, db:15, h:20});\n\nvar p2={\n\n\tpath:[\n\t\t\n\t\t\n\t\t\"m\", 0.5,0,\n\t\t\"lr\", 0, -6,\n\t\t\"lr\", -3,1,\n\t\t\"lr\", 3,5\n\t\t//*/\n\n\t]\n\n}\n\nvar sh2 = shape(p2);\nvar o2 = linePaths3d(sh2, {\n\t\tpath: convertTo3d(p1.path),\n\t\n\t\tfn:100,\n\t\tclose:true\n\n\t});\n\n\nvar o3 = linePaths3d(sh2, {\n\t\tpath:[\n\t\t\t\"m\", 0,0,0,\n\t\t\t\"lr\", 1,0,0\n\t\t]\n\n\t});\n//*/\n\nplacement({ccx:0,ccy:0, ttz:-8},\n\to1,o2);\nplacement({llx:0,ccy:0, ttz:0},\n\to1,o3);\n\n\nreturn difference(o1,o2,o3);\n\n\n\n\n\n\n"
     },
     {
       "title": "Case Left",
@@ -23,6 +23,10 @@
     {
       "title": "case test",
       "content": "\n\nfunction topBox(boxPath)\n{\n\tvar boxShape=shape(boxPath);\n\tvar obj= floor( rotate([0,0,90], linePaths3d(boxShape, {\n\t\t\t\t\tpath:[\n\t\t\t\t\t\t\"m\", 0,0, 0,\n\t\t\t\t\t\t\"lr\", 0,0,boxPath.thick\n\t\t\t\t\t]\n\t\t\t\t})));\n\n\tvar bev3dPath={\n\t\tpath:convertTo3d(boxPath.path),\n\t\tfn:20,\n\t\tclose:true\n\n\t};\n\n\tvar bevShape1=shape({\n\t\t\tpath:[\n\t\t\t\t\"m\", 0.01, 0.01,\n\t\t\t\t\"lr\", -(boxPath.angx + 0.02), -(boxPath.angy + 0.02),\n\t\t\t\t\"lr\", (boxPath.angx + 0.02), 0,\n\t\t\t\t\"lr\", 0,(boxPath.angy + 0.02)\n\t\t\t]\n\t\t});\n\n\n\tvar bev3d1= linePaths3d(bevShape1, bev3dPath);\n\n\tplacement({ccx:0, ccy:0, bbz:-0.002},obj, bev3d1);\n\n\n\tvar gaskd=boxPath.gasket;\n\tvar gaskr=gaskd/2;\n\t//PrintLog((boxPath.angy-gaskd)/2)\n\tvar gaskShape =shape({\n\t\t\tpath:[\n\t\t\t\t\"m\",-boxPath.angx/2,(boxPath.angy-gaskd)/2+ gaskd,\n\t\t\t\t\"xr\", -gaskr, -gaskr, 0, -gaskd,\n\t\t\t\t\"xr\", gaskr, gaskr, 0, gaskd\n\t\t\t],\n\t\t\tfn:20\n\n\t\t});\n\n\tvar gaskobj= linePaths3d(gaskShape, bev3dPath)\n\n\n\n\n\n\t//return [obj, translate([0,0,6], bev3d1)]\n\n\tobj= difference(obj, bev3d1);\n\n\n\treturn {\n\n\t\ttop: difference(obj, gaskobj),\n\t\tcutout: union(obj, gaskobj),\n\t\tgasket:gaskobj\n\t}\n\n}\n\n\n\nvar rad = 3.5;\nvar side=10;\nvar half=(rad*2+side)/2;\n\n\n//clockwise\nvar path ={\n\tpath:[\n\t\t\"m\", -half+rad, -half,\n\t\t\"qr\", -rad, 0, -rad, rad,\n\t\t\"lr\", 0, side,\n\t\t\"qr\", 0, rad, rad, rad,\n\t\t\"lr\", side, 0,\n\t\t\"qr\", rad, 0, rad, -rad,\n\t\t\"lr\", 0, -side,\n\t\t\"qr\", 0, -rad, -rad, -rad,\n\t\t\"lr\", -side, 0\n\n\t],\n\n\tfn:20,\n\tangx:2.4,\n\tangy:2.4,\n\tthick:2.402,\n\tgasket:0.8\n\n}\n\n\n\nvar b= topBox(path);\n//*/\n\n/*\nreturn difference(\n\tunion(b.top),\n\talign({cx:0, cz:0, uy:0},cube([100,100,100])  )\n);\n//*/\n\n\n\nvar boxShape=shape({\n\t\tpath:[\n\t\t\t\"m\", 0,0,\n\t\t\t//\"lr\", 0, -10,\n\t\t\t//\"lr\", -2.4, 0,\n\t\t\t//\"lr\", 0,10,\n\t\t\t//\"lr\", 2.4,0\n\t\t\t\"lr\", -2.4, 0,\n\t\t\t\"lr\", 0,-6,\n\t\t\t\"lr\", 2.4,0,\n\t\t\t\"lr\", 0,6\n\n\n\t\t]\n\n\t});\nvar boxo= linePaths3d(boxShape, {\n\t\tpath:convertTo3d(path.path),\n\t\tfn:50,\n\t\tclose:true\n\n\t})\nplacement({ccx:0, ccy:0, ttz:0.001},boxo, b.cutout);\n\n\nboxo= translate([20,0,0],floor(difference(boxo, b.cutout)));\n\n\nreturn [b.top, boxo];\n"
+    },
+    {
+      "title": "Untitled 7",
+      "content": "\n\n\n\nvar p1={\n\n\tpath:[\n\t\t\"m\", 0,0,\n\t\t\"lr\", 0,6,\n\t\t\"lr\",3,-1,\n\t\t\"lr\",-3,-5\n\t],\n\tfn:100\n\n};\n\n\nvar o1= linePaths3d(shape(p1), {\n\n\t\tpath:[\n\t\t\t\"m\", 0,0,0,\n\t\t\t\"s\", 1.5,1.5,\n\t\t\t\"lr\", 0,0,20\n\t\t]\n\n\t});\n\t\n\t\nvar o2= linePaths3d(shape(p1), {\n\n\t\tpath:[\n\t\t\t\"m\", 0,0,0,\n\t\t\t\"s\", 1.5,1.5,\n\t\t\t\"lr\", 0,20,0\n\t\t]\n\n\t});\n\n\nreturn [o1, o2]\n\n\n\n"
     }
   ],
   "editorCode": [
@@ -31,5 +35,87 @@
       "content": "// Place reusable functions and objects here. // Access from\n                    CSG Script with include(\"page name\"); /* var constants = {\n                    PI: Math.PI, E: Math.E }; return { constants }; */"
     }
   ],
-  "meshCache": {}
+  "meshCache": {
+    "Untitled 7": {
+      "mesh": [
+        [
+          {
+            "$jsonMesh": {
+              "mesh": {
+                "positions": "AAAAAAAAAAAAAKBBAAAQQVjXnqYAAKBBAADwQAAAkEAAAKBBAAAAAAAAAAAAAAAAAADAQMrJU6YAAAAAAACgQAAAQEAAAAAAAAAAAAAAAAAAAAAAAADAQMrJU6YAAAAAAACgQAAAQEAAAAAAAAAAAAAAAAAAAKBBAAAQQVjXnqYAAKBBAADwQAAAkEAAAKBB",
+                "normals": "AAAAAAAAAAAAAIA/AAAAAAAAAAAAAIA/AAAAAAAAAAAAAIA/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/Qx+Tvho0db84ZeuXed5lP2CL1r7i6wm+5tOhvti9cj9RdgG9nvtnv3KE2D4AAAAADrqhPhWXcr93EkK9fUaSPtHKcz+8adu9",
+                "indices": "AQACAAAABAADAAUABgAHAAoABgAKAAkABwAIAAsABwALAAoACAAGAAkACAAJAAsA",
+                "materials": [
+                  {
+                    "color": "#ffcc00",
+                    "roughness": 0.6,
+                    "metalness": 0.2,
+                    "side": 2,
+                    "flatShading": true,
+                    "type": "MeshStandardMaterial"
+                  }
+                ],
+                "groups": [],
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotation": [
+                  0,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "userData": {}
+            }
+          }
+        ],
+        [
+          {
+            "$jsonMesh": {
+              "mesh": {
+                "positions": "AAAAAAAAoEEAAAAAWNceJgAAoEEAABDBAACQwAAAoEEAAPDAAAAAAAAAAAAAAAAAysnTJQAAAAAAAMDAAABAwAAAAAAAAKDAAAAAAAAAAAAAAAAAysnTJQAAAAAAAMDAAABAwAAAAAAAAKDAAAAAAAAAoEEAAAAAWNceJgAAoEEAABDBAACQwAAAoEEAAPDA",
+                "normals": "AAAAAAAAgD8AAAAAAAAAAAAAgD8AAAAAAAAAAAAAgD8AAAAAAAAAAAAAgL8AAAAAAAAAAAAAgL8AAAAAAAAAAAAAgL8AAAAAGjR1Pzhla5dDH5M+YIvWPuLrCb553mW/2L1yv1F2Ab3m06E+coTYvgAAAACe+2c/FZdyP3cSQr0OuqG+0cpzv7xp2719RpK+",
+                "indices": "AQACAAAABAADAAUABgAHAAoABgAKAAkABwAIAAsABwALAAoACAAGAAkACAAJAAsA",
+                "materials": [
+                  {
+                    "color": "#ffcc00",
+                    "roughness": 0.6,
+                    "metalness": 0.2,
+                    "side": 2,
+                    "flatShading": true,
+                    "type": "MeshStandardMaterial"
+                  }
+                ],
+                "groups": [],
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotation": [
+                  0,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "userData": {}
+            }
+          }
+        ]
+      ],
+      "updated": true
+    }
+  }
 }
