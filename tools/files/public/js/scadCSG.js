@@ -1716,21 +1716,6 @@ function applyQuaternion(vector, quaternion) {
 
 //////////work on///////
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /// @typedef {object} Point
 /// @property {number} x - The X coordinate.
 /// @property {number} y - The Y coordinate.
@@ -1741,32 +1726,34 @@ function applyQuaternion(vector, quaternion) {
 
 class Path2d {
     /// @param {number} fn - Default number of segments for curves (tessellation factor). Default is 20.
-    constructor(){//fn = 20) {
+    constructor() {
+        //fn = 20) {
         /// @type {Array<string|number>}
         this._path = [] // Private: Stores the sequence of path commands
         /// @type {number}
-        this._fn = 20; // Private: Default number of segments for curves
+        this._fn = 20 // Private: Default number of segments for curves
         /// @type {[number, number]}
         this._cp = [0, 0] // Private: Current point [x, y]
         /// @type {number}
         this._atn = 1 // Private: Number of segments for the next command ('n' command sets this)
         this._tpath // thisnis the teselated path.
     }
-	
-	fn(v){
-		this._fn=v;
-		return this
-	}
-	
-	path(data){
-		if(data instanceof Path3d) {
-			this._path =convertTo2d(data._path)
-		} else {
-			this._path=data;
-		}
-		this._tpath=undefined;
-		return this;
-	}
+
+    fn(v) {
+        this._fn = v
+        return this
+    }
+
+    path(data) {
+        if (data instanceof Path3d) {
+            this._path = convertTo2d(data._path)
+            this._fn = data._fn
+        } else {
+            this._path = data
+        }
+        this._tpath = undefined
+        return this
+    }
 
     // --- Public Path Commands (Methods for Cascading) ---
 
@@ -2470,10 +2457,7 @@ class Path2d {
     }
 }
 
-
-
-
-
+//
 
 /// @typedef {[number, number, number]} Point3D - A 3D coordinate [x, y, z].
 /// @typedef {[number, number]} Scale2D - A 2D scale factor [sx, sy].
@@ -2490,60 +2474,59 @@ class Path3d {
     /// @param {number} fn - Default number of segments for curves (tessellation factor). Default is 20.
     /// @param {boolean} [close=false] - Whether the path is a closed loop.
     /// @param {boolean} [xyInitAng=true] - Flag for normal calculation.
-    constructor(){//fn = 20, close = false, xyInitAng = true) {
-        /// @type {Array<string|number>} 
+    constructor() {
+        //fn = 20, close = false, xyInitAng = true) {
+        /// @type {Array<string|number>}
         this._path = [] // Private: Stores the sequence of path commands
-        /// @type {number} 
+        /// @type {number}
         this._fn = 20 // Private: Default number of segments for curves
-        /// @type {Point3D} 
+        /// @type {Point3D}
         this._cp = [0, 0, 0] // Private: Current point [x, y, z]
-        /// @type {number} 
+        /// @type {number}
         this._cr = 0 // Private: Current rotation
-        /// @type {Scale2D} 
+        /// @type {Scale2D}
         this._cs = [1, 1] // Private: Current scale
-        /// @type {number} 
+        /// @type {number}
         this._atn = 1 // Private: Number of segments for the next command ('n' command sets this)
-        /// @type {number} 
+        /// @type {number}
         this._atr = 0 // Private: Target rotation for the next point ('r' command sets this)
-        ///@type {Scale2D} 
+        ///@type {Scale2D}
         this._ats = [1, 1] // Private: Target scale for the next point ('s' command sets this)
 
-        /// @type {boolean} 
+        /// @type {boolean}
         this._close = false
-        ///@type {boolean} 
+        ///@type {boolean}
         this._xyInitAng = true
 
-        ///@type {Path3DResult} 
+        ///@type {Path3DResult}
         this._pathData = null // Private: Stores the processed result
     }
-	
-	fn(v) {
-		this._fn=v;
-		
-		return this
-	}
-	
-	close(v) {
-		this._close=v;
-		return this
-	}
-	
-	xyInitAng(v) {
-		this._xyInitAng=v;
-		return this
-	}
-	
-	path(data){
-		
-		if(data instanceof Path2d) {
-			this._path =convertTo3d(data._path)
-			
-		} else {
-			
-			this._path=data;
-		}
-		return this;
-	}
+
+    fn(v) {
+        this._fn = v
+
+        return this
+    }
+
+    close(v) {
+        this._close = v
+        return this
+    }
+
+    xyInitAng(v) {
+        this._xyInitAng = v
+        return this
+    }
+
+    path(data) {
+        if (data instanceof Path2d) {
+            this._path = convertTo3d(data._path)
+            this._fn = data._fn
+        } else {
+            this._path = data
+        }
+        return this
+    }
 
     // --- Public Path Commands (Methods for Cascading) ---
 
@@ -2624,7 +2607,6 @@ class Path3d {
         this._path.push('s', sx, sy)
         return this
     }
-	
 
     // --- Public Result Method ---
 
@@ -2664,9 +2646,9 @@ class Path3d {
     /// @private
     _vnormalize(p) {
         // Corrected: Calls to _vlength must use 'this.'
-       
-	   const l = this._vlength(p)
-       return l > 1e-6 ? [p[0] / l, p[1] / l, p[2] / l] : [0, 0, 0]
+
+        const l = this._vlength(p)
+        return l > 1e-6 ? [p[0] / l, p[1] / l, p[2] / l] : [0, 0, 0]
     }
 
     /// @private
@@ -2711,9 +2693,12 @@ class Path3d {
             const t1 = 1 - t
             const t12 = t1 * t1
             const t13 = t12 * t1
-            const x = t13 * x0 + 3 * t12 * t * cp1x + 3 * t1 * t2 * cp2x + t3 * x3
-            const y = t13 * y0 + 3 * t12 * t * cp1y + 3 * t1 * t2 * cp2y + t3 * y3
-            const z = t13 * z0 + 3 * t12 * t * cp1z + 3 * t1 * t2 * cp2z + t3 * z3
+            const x =
+                t13 * x0 + 3 * t12 * t * cp1x + 3 * t1 * t2 * cp2x + t3 * x3
+            const y =
+                t13 * y0 + 3 * t12 * t * cp1y + 3 * t1 * t2 * cp2y + t3 * y3
+            const z =
+                t13 * z0 + 3 * t12 * t * cp1z + 3 * t1 * t2 * cp2z + t3 * z3
             return [x, y, z]
         }
     }
@@ -2789,15 +2774,21 @@ class Path3d {
     _getArcSegmentPoints3D(p0, p1, p2, segments) {
         // Shorthand for internal vector math methods
         //const vsub = this._vsub, vadd = this._vadd, vscale = this._vscale, vdot = this._vdot, vcross = this._vcross, vlength = this._vlength, vnormalize = this._vnormalize
-        
+
         // 1. Find Center C
         const v01 = this._vsub(p1, p0)
         const v12 = this._vsub(p2, p1)
         const m01 = this._vadd(p0, this._vscale(v01, 0.5))
         const m12 = this._vadd(p1, this._vscale(v12, 0.5))
 
-        const A1 = v01[0], B1 = v01[1], C1 = v01[2], D1 = this._vdot(v01, m01)
-        const A2 = v12[0], B2 = v12[1], C2 = v12[2], D2 = this._vdot(v12, m12)
+        const A1 = v01[0],
+            B1 = v01[1],
+            C1 = v01[2],
+            D1 = this._vdot(v01, m01)
+        const A2 = v12[0],
+            B2 = v12[1],
+            C2 = v12[2],
+            D2 = this._vdot(v12, m12)
 
         const N_arc_unnorm = this._vcross(v01, v12)
 
@@ -2806,7 +2797,10 @@ class Path3d {
         }
 
         const N_arc = this._vnormalize(N_arc_unnorm)
-        const A3 = N_arc[0], B3 = N_arc[1], C3 = N_arc[2], D3 = this._vdot(N_arc, p0)
+        const A3 = N_arc[0],
+            B3 = N_arc[1],
+            C3 = N_arc[2],
+            D3 = this._vdot(N_arc, p0)
 
         // Cramer's Rule for Center
         const detA =
@@ -2882,7 +2876,8 @@ class Path3d {
 
         // 5. Generate Line Segments
         const segmentPoints = []
-        for (let j = 1; j < segments; j++) { // Loop up to segments - 1
+        for (let j = 1; j < segments; j++) {
+            // Loop up to segments - 1
             const angle = (sweep * j) / segments
 
             const cosA = Math.cos(angle)
@@ -2904,7 +2899,7 @@ class Path3d {
     _tessellateAndProcess() {
         const paths = this._path
         const fn = this._fn
-        
+
         // Reset current internal state
         this._cp = [0, 0, 0]
         this._cr = 0
@@ -2912,7 +2907,7 @@ class Path3d {
         this._atn = 1
         this._atr = 0
         this._ats = [1, 1]
-        
+
         const newPath = {
             p: [],
             r: [],
@@ -3019,7 +3014,10 @@ class Path3d {
                         const t = (j + 1) / segmentsToUse
                         newPath.p.push([...p])
                         newPath.r.push(cr * (1 - t) + atr * t)
-                        newPath.s.push([cs[0] * (1 - t) + ats[0] * t, cs[1] * (1 - t) + ats[1] * t])
+                        newPath.s.push([
+                            cs[0] * (1 - t) + ats[0] * t,
+                            cs[1] * (1 - t) + ats[1] * t
+                        ])
                     })
 
                     cp = endPoint
@@ -3031,10 +3029,16 @@ class Path3d {
                 }
                 case 'qr': {
                     const endPoint = [
-                        cp[0] + paths[i + 4], cp[1] + paths[i + 5], cp[2] + paths[i + 6]
+                        cp[0] + paths[i + 4],
+                        cp[1] + paths[i + 5],
+                        cp[2] + paths[i + 6]
                     ]
                     const controlPoints = [
-                        [cp[0] + paths[i + 1], cp[1] + paths[i + 2], cp[2] + paths[i + 3]]
+                        [
+                            cp[0] + paths[i + 1],
+                            cp[1] + paths[i + 2],
+                            cp[2] + paths[i + 3]
+                        ]
                     ]
                     const segmentsToUse = atn > 1 ? atn : fn
                     const segmentPoints = this._getPointsAtEqualDistance(
@@ -3048,7 +3052,10 @@ class Path3d {
                         const t = (j + 1) / segmentsToUse
                         newPath.p.push([...p])
                         newPath.r.push(cr * (1 - t) + atr * t)
-                        newPath.s.push([cs[0] * (1 - t) + ats[0] * t, cs[1] * (1 - t) + ats[1] * t])
+                        newPath.s.push([
+                            cs[0] * (1 - t) + ats[0] * t,
+                            cs[1] * (1 - t) + ats[1] * t
+                        ])
                     })
 
                     cp = endPoint
@@ -3076,7 +3083,10 @@ class Path3d {
                         const t = (j + 1) / segmentsToUse
                         newPath.p.push([...p])
                         newPath.r.push(cr * (1 - t) + atr * t)
-                        newPath.s.push([cs[0] * (1 - t) + ats[0] * t, cs[1] * (1 - t) + ats[1] * t])
+                        newPath.s.push([
+                            cs[0] * (1 - t) + ats[0] * t,
+                            cs[1] * (1 - t) + ats[1] * t
+                        ])
                     })
 
                     cp = endPoint
@@ -3088,11 +3098,21 @@ class Path3d {
                 }
                 case 'cr': {
                     const endPoint = [
-                        cp[0] + paths[i + 7], cp[1] + paths[i + 8], cp[2] + paths[i + 9]
+                        cp[0] + paths[i + 7],
+                        cp[1] + paths[i + 8],
+                        cp[2] + paths[i + 9]
                     ]
                     const controlPoints = [
-                        [cp[0] + paths[i + 1], cp[1] + paths[i + 2], cp[2] + paths[i + 3]],
-                        [cp[0] + paths[i + 4], cp[1] + paths[i + 5], cp[2] + paths[i + 6]]
+                        [
+                            cp[0] + paths[i + 1],
+                            cp[1] + paths[i + 2],
+                            cp[2] + paths[i + 3]
+                        ],
+                        [
+                            cp[0] + paths[i + 4],
+                            cp[1] + paths[i + 5],
+                            cp[2] + paths[i + 6]
+                        ]
                     ]
                     const segmentsToUse = atn > 1 ? atn : fn
                     const segmentPoints = this._getPointsAtEqualDistance(
@@ -3106,7 +3126,10 @@ class Path3d {
                         const t = (j + 1) / segmentsToUse
                         newPath.p.push([...p])
                         newPath.r.push(cr * (1 - t) + atr * t)
-                        newPath.s.push([cs[0] * (1 - t) + ats[0] * t, cs[1] * (1 - t) + ats[1] * t])
+                        newPath.s.push([
+                            cs[0] * (1 - t) + ats[0] * t,
+                            cs[1] * (1 - t) + ats[1] * t
+                        ])
                     })
 
                     cp = endPoint
@@ -3117,7 +3140,11 @@ class Path3d {
                     break
                 }
                 case 'x': {
-                    const controlPoint = [paths[i + 1], paths[i + 2], paths[i + 3]]
+                    const controlPoint = [
+                        paths[i + 1],
+                        paths[i + 2],
+                        paths[i + 3]
+                    ]
                     const endPoint = [paths[i + 4], paths[i + 5], paths[i + 6]]
                     const segmentsToUse = atn > 1 ? atn : fn
 
@@ -3130,7 +3157,10 @@ class Path3d {
                         const t = (j + 1) / segmentsToUse
                         newPath.p.push([...p])
                         newPath.r.push(cr * (1 - t) + atr * t)
-                        newPath.s.push([cs[0] * (1 - t) + ats[0] * t, cs[1] * (1 - t) + ats[1] * t])
+                        newPath.s.push([
+                            cs[0] * (1 - t) + ats[0] * t,
+                            cs[1] * (1 - t) + ats[1] * t
+                        ])
                     })
 
                     // Explicitly push the final endpoint (P2)
@@ -3147,10 +3177,14 @@ class Path3d {
                 }
                 case 'xr': {
                     const controlPoint = [
-                        cp[0] + paths[i + 1], cp[1] + paths[i + 2], cp[2] + paths[i + 3]
+                        cp[0] + paths[i + 1],
+                        cp[1] + paths[i + 2],
+                        cp[2] + paths[i + 3]
                     ]
                     const endPoint = [
-                        cp[0] + paths[i + 4], cp[1] + paths[i + 5], cp[2] + paths[i + 6]
+                        cp[0] + paths[i + 4],
+                        cp[1] + paths[i + 5],
+                        cp[2] + paths[i + 6]
                     ]
                     const segmentsToUse = atn > 1 ? atn : fn
 
@@ -3163,7 +3197,10 @@ class Path3d {
                         const t = (j + 1) / segmentsToUse
                         newPath.p.push([...p])
                         newPath.r.push(cr * (1 - t) + atr * t)
-                        newPath.s.push([cs[0] * (1 - t) + ats[0] * t, cs[1] * (1 - t) + ats[1] * t])
+                        newPath.s.push([
+                            cs[0] * (1 - t) + ats[0] * t,
+                            cs[1] * (1 - t) + ats[1] * t
+                        ])
                     })
 
                     // Explicitly push the final endpoint (P2)
@@ -3199,26 +3236,25 @@ class Path3d {
 
         this._pathData = newPath
     }
-	
-	_calculateAverageTangent(p0, p1, p2) {
-		//const vsub = this._vsub, vadd = this._vadd, vnormalize = this._vnormalize
-            
-		if (!p0) {
-			return this._vnormalize(this._vsub(p2, p1))
+
+    _calculateAverageTangent(p0, p1, p2) {
+        //const vsub = this._vsub, vadd = this._vadd, vnormalize = this._vnormalize
+
+        if (!p0) {
+            return this._vnormalize(this._vsub(p2, p1))
         } else if (!p2) {
-			return this._vnormalize(this._vsub(p1, p0))
-		} else {
-			const v1 = this._vsub(p1, p0)
-			const v2 = this._vsub(p2, p1)
-			return this._vnormalize(this._vadd(v1, v2))
-		}
-	}
-	
+            return this._vnormalize(this._vsub(p1, p0))
+        } else {
+            const v1 = this._vsub(p1, p0)
+            const v2 = this._vsub(p2, p1)
+            return this._vnormalize(this._vadd(v1, v2))
+        }
+    }
+
     /// Calculates the tangent/normal vectors for all points.
     /// @private
     _calculateNormals() {
         if (!this._pathData || this._pathData.p.length === 0) return
-		
 
         const points = this._pathData.p
         const normals = []
@@ -3234,7 +3270,7 @@ class Path3d {
                 isClosed = true
             }
         }
-        
+
         if (points.length === 1) {
             normals.push([1, 0, 0])
         } else if (points.length > 1) {
@@ -3242,13 +3278,19 @@ class Path3d {
             if (isClosed) {
                 normals.push(this._calculateAverageTangent(lp, fp, points[1]))
             } else {
-                normals.push(this._calculateAverageTangent(undefined, fp, points[1]))
+                normals.push(
+                    this._calculateAverageTangent(undefined, fp, points[1])
+                )
             }
 
             // Intermediate points
             for (let j = 1; j < points.length - 1; j++) {
                 normals.push(
-                    this._calculateAverageTangent(points[j - 1], points[j], points[j + 1])
+                    this._calculateAverageTangent(
+                        points[j - 1],
+                        points[j],
+                        points[j + 1]
+                    )
                 )
             }
 
@@ -3271,15 +3313,7 @@ class Path3d {
     }
 }
 
-
 //*/
-
-
-
-
-
-
-
 
 // --- ASSUMED EXTERNAL HELPERS ---
 // You provided applyQuaternion, which is included below.
@@ -3301,7 +3335,7 @@ const applyToPath2d = (item, applyFunction, ...args) =>
  */
 function extrude3d(target, commandPath) {
     // 1. Process the 3D path data
-    var path = commandPath.getPoints()//path3d(commandPath)
+    var path = commandPath.getPoints() //path3d(commandPath)
     let close = path.close
 
     // 2. Extract all Path2d instances from the target object
@@ -3556,6 +3590,442 @@ function extrude3d(target, commandPath) {
 
     return meshes
 }
+
+//
+
+function sweep3d(circularPath, wallPath, holeWallPath) {
+    // 1. Process the 3D path data
+
+    
+    let close = false
+
+    // 2. Extract all Path2d instances from the target object
+    //var path2dTargets = [wallPath]
+
+    const convertToVector2 = (p) => new THREE.Vector2(p.x, p.y)
+    var wallPoints = () =>
+        wallPath.getPoints()[0].outerPoints.map(convertToVector2)
+		
+	var holeWallPoints = () =>
+        holeWallPath.getPoints()[0].outerPoints.map(convertToVector2)
+		
+		
+    
+    const meshes = []
+	
+    var topCapPoints = []
+    var bottomCapPoints = []
+    // ⭐ NEW: Arrays to hold 3D points for all hole contours
+    var topHolePointArrays = []
+    var bottomHolePointArrays = []
+
+    // --- Helper function to generate geometry from one ShapeData object ---
+    const genFromShapeData = (path2d, isHole) => {
+        
+        //shapeData is wall points
+		var upVector = new THREE.Vector3(0, 0, 1)
+	
+        var path3d = new Path3d().path(path2d)
+        var path = path3d.getPoints()
+
+        const p1 = path.p[0]
+        const p2 = path.p[1]
+        let dx = p2[0] - p1[0]
+        let dy = p2[1] - p1[1]
+
+        let initialRotationRadians = 0
+
+        //if (path.xyInitAng) {
+        initialRotationRadians = Math.atan2(dy, dx) + Math.PI / 2
+        //} else {
+        //initialRotationRadians = Math.PI / 2
+        //}
+
+        const cosR = Math.cos(initialRotationRadians)
+        const sinR = Math.sin(initialRotationRadians)
+
+        //calc path stuff
+
+        var points3d = []
+        var preCalc = []
+
+        // 3. Pre-calculate rotations and quaternions for each path segment (Unchanged)
+        for (var i = 0; i < path.p.length; i++) {
+            points3d.push(...[0, 0, i])
+            const rotation = path.r[i]
+            var o = {}
+            o.cosR = Math.cos((rotation / 180) * Math.PI)
+            o.sinR = Math.sin((rotation / 180) * Math.PI)
+            const normal = new THREE.Vector3().fromArray(path.n[i])
+            o.quaternion = new THREE.Quaternion().setFromUnitVectors(
+                upVector,
+                normal
+            )
+            applyQuaternion(upVector, o.quaternion)
+
+            preCalc.push(o)
+        }
+
+        /////end cald stuff
+
+        var finalMeshes = []
+
+        
+        const segments = points3d.length / 3 - 1
+
+        const convertToVector2 = (p) => new THREE.Vector2(p.x, p.y)
+        let contourPoints;
+		
+		
+		if(isHole && holeWallPath)	{
+			
+			contourPoints=holeWallPoints();
+			
+		} else {
+			contourPoints=wallPoints()
+		}	
+        // ⭐ MODIFIED: Convert hole points to THREE.Vector2 arrays
+        //const holeContours = shapeData.holePoints.map(hole => hole.map(convertToVector2));
+
+        // Apply Initial Rotation
+        const rotatePoints = (points) => {
+            for (const point of points) {
+                const x = point.x
+                const y = point.y
+                point.x = x * cosR - y * sinR
+                point.y = x * sinR + y * cosR
+            }
+        }
+
+        // Rotate outer and hole contours
+        rotatePoints(contourPoints)
+        //holeContours.forEach(rotatePoints);
+
+        // Calculation of Final 3D Point with Cumulative Rotation (Unchanged)
+        const calcFinalPoint = (point, i) => {
+            var x = point.x
+            var y = point.y
+            var z = 0
+
+            // Apply path.s for scale
+            x = x * path.s[i][0]
+            y = y * path.s[i][1]
+
+            // Apply 2D rotation (path.r)
+            var o = preCalc[i]
+            let rotatedX = x * o.cosR - y * o.sinR
+            let rotatedY = x * o.sinR + y * o.cosR
+            x = rotatedX
+            y = rotatedY
+
+            const ppoint = new THREE.Vector3(x, y, z)
+
+            // Apply the 3D rotation CUMULATIVELY
+            for (var k = 0; k <= i; k++) {
+                applyQuaternion(ppoint, preCalc[k].quaternion)
+            }
+
+            // Apply the 3D translation
+            ppoint.x += path.p[i][0]
+            ppoint.y += path.p[i][1]
+            ppoint.z += path.p[i][2]
+            return ppoint
+        }
+		
+        // --- DEFINITION 2: Side Wall Generation (MODIFIED for CAP POINT COLLECTION) ---
+        // Extrude ALL contours (outer and holes) to create the side walls.
+        const extrudeContour = (points, isHole) => {
+            const contourStartVertexCount = 0 //vertexCount
+            const numPoints = points.length
+            const numWallSegments = numPoints - 1
+            const reverseWinding = isHole // Holes need reversed winding for the wall
+
+            var r = {
+                vertices: [],
+                indices: [],
+                uvs: [],
+                vertexCount: 0
+            }
+
+            // 1. Calculate total length for U coordinate
+            let contourLength = 0
+            for (let i = 0; i < numWallSegments; i++) {
+                contourLength += points[i].distanceTo(points[i + 1])
+            }
+
+            // 2. Generate Vertices and UVs
+            let u_current = 0
+
+            // ⭐ Capture point array reference for the cap points
+            const currentCapPoints = []
+            const currentTopPoints = []
+
+            for (let i = 0; i <= segments; i++) {
+                const v = 1 - i / segments
+                u_current = 0
+
+                for (let j = 0; j < numPoints; j++) {
+                    const point = points[j]
+                    var ppoint = calcFinalPoint(point, i)
+
+                    // Add to the WALL geometry vertices
+                    r.vertices.push(ppoint.x, ppoint.y, ppoint.z)
+                    r.vertexCount++
+
+                    // ⭐ Collect 3D points for the Caps
+                    if (j == 0) {
+                        // At the start of the path (Bottom)
+                        currentCapPoints.push(ppoint.x, ppoint.y, ppoint.z)
+                    }
+                    if (j == numPoints - 1) {
+                        // At the end of the path (Top)
+                        currentTopPoints.push(ppoint.x, ppoint.y, ppoint.z)
+                    }
+
+                    let u_val = u_current / contourLength
+                    if (j === numPoints - 1) {
+                        u_val = 1.0
+                    }
+                    r.uvs.push(u_val, v)
+
+                    if (j < numWallSegments) {
+                        const p1 = points[j]
+                        const p2 = points[j + 1]
+                        u_current += p1.distanceTo(p2)
+                    }
+                }
+            }
+
+            // ⭐ Store 3D points based on contour type
+            if (isHole) {
+                bottomHolePointArrays.push(currentCapPoints)
+                topHolePointArrays.push(currentTopPoints)
+            } else {
+                // This is the outer contour
+                bottomCapPoints.push(...currentCapPoints)
+                topCapPoints.push(...currentTopPoints)
+            }
+
+            // 3. Generate Indices (Faces)
+            for (let i = 0; i < segments; i++) {
+                // Loop only up to numWallSegments to prevent closing
+                for (let j = 0; j < numWallSegments; j++) {
+                    const idx_a = contourStartVertexCount + i * numPoints + j
+                    const idx_b =
+                        contourStartVertexCount + i * numPoints + (j + 1)
+                    const idx_c =
+                        contourStartVertexCount + (i + 1) * numPoints + (j + 1)
+                    const idx_d =
+                        contourStartVertexCount + (i + 1) * numPoints + j
+
+                    //if (!reverseWinding) {
+                        r.indices.push(idx_a, idx_d, idx_c)
+                        r.indices.push(idx_a, idx_c, idx_b)
+                    //} else {
+                        // Reverse winding for holes
+                        //r.indices.push(idx_a, idx_b, idx_c)
+                        //r.indices.push(idx_a, idx_c, idx_d)
+                    //}
+                }
+            }
+            return r
+        }
+
+        // --- Execution ---
+
+        // 1. Generate all vertices and wall indices for the outer contour
+        finalMeshes.push(extrudeContour(contourPoints, isHole))
+
+        // 2. Generate all vertices and wall indices for the hole contours
+        
+        for (var i = 0; i < finalMeshes.length; i++) {
+            var geometry = new THREE.BufferGeometry()
+            geometry.setIndex(finalMeshes[i].indices)
+            geometry.setAttribute(
+                'position',
+                new THREE.Float32BufferAttribute(finalMeshes[i].vertices, 3)
+            )
+            geometry.setAttribute(
+                'uv',
+                new THREE.Float32BufferAttribute(finalMeshes[i].uvs, 2)
+            )
+            geometry.computeVertexNormals()
+
+            // Create the Wall Mesh
+            const wallMesh = new THREE.Mesh(geometry, defaultMaterial.clone())
+            meshes.push(wallMesh)
+        }
+
+        
+    }
+
+    // ⭐ MODIFIED: Helper function to create cap geometry (handles holes)
+    const createCapGeometry = (
+        outer3DPoints,
+        hole3DPointArrays,
+        isBottomCap
+    ) => {
+        if (outer3DPoints.length === 0) return null
+
+        // 1. Extract 3D Vector points and find the planar projection (e.g., on XY plane)
+        let minX = Infinity,
+            minY = Infinity,
+            maxX = -Infinity,
+            maxY = -Infinity
+        const contour3DPoints = []
+        const projected2DPoints = [] // Outer contour for THREE.Shape
+
+        // Process Outer Contour
+        for (let i = 0; i < outer3DPoints.length; i += 3) {
+            const x = outer3DPoints[i]
+            const y = outer3DPoints[i + 1]
+            const z = outer3DPoints[i + 2]
+            const v3 = new THREE.Vector3(x, y, z)
+            contour3DPoints.push(v3)
+
+            projected2DPoints.push(new THREE.Vector2(x, y))
+
+            minX = Math.min(minX, x)
+            minY = Math.min(minY, y)
+            maxX = Math.max(maxX, x)
+            maxY = Math.max(maxY, y)
+        }
+
+        // Process Hole Contours (needed for THREE.ShapeUtils.triangulateShape)
+        const projectedHoles2D = []
+
+        for (const hole3DPoints of hole3DPointArrays) {
+            const hole2DPoints = []
+            for (let i = 0; i < hole3DPoints.length; i += 3) {
+                const x = hole3DPoints[i]
+                const y = hole3DPoints[i + 1]
+                const z = hole3DPoints[i + 2]
+                const v3 = new THREE.Vector3(x, y, z)
+
+                // Add hole 3D point to the main vertex array
+                contour3DPoints.push(v3)
+
+                hole2DPoints.push(new THREE.Vector2(x, y))
+            }
+            projectedHoles2D.push(hole2DPoints)
+        }
+
+        let width = maxX - minX
+        let height = maxY - minY
+
+        // Handle zero width/height case for UVs
+        if (width === 0) {
+            maxX += 1
+            width = 1
+        }
+        if (height === 0) {
+            maxY += 1
+            height = 1
+        }
+
+        // 2. Triangulate the 2D Shape - PASSING THE HOLES ARRAY
+        const triangles = THREE.ShapeUtils.triangulateShape(
+            projected2DPoints,
+            projectedHoles2D // <--- Pass 2D hole contours for triangulation
+        )
+
+        // 3. Setup Final Vertices, Indices, and UVs arrays
+        const capVerticesFinal = []
+        const capIndices = []
+        const capUVs = []
+
+        // Add all 3D contour (outer and holes) vertices to the final array
+        for (const v of contour3DPoints) {
+            capVerticesFinal.push(v.x, v.y, v.z)
+
+            // Simple planar UV mapping (using World X/Y)
+            capUVs.push((v.x - minX) / width, (v.y - minY) / height)
+        }
+
+        // 4. Generate Indices from the Triangulation result
+        for (const triangle of triangles) {
+            // The indices from triangulateShape refer to the indices in contour3DPoints.
+            const idx0 = triangle[0]
+            const idx1 = triangle[1]
+            const idx2 = triangle[2]
+
+            if (isBottomCap) {
+                // Reverse winding for the bottom cap
+                capIndices.push(idx0, idx2, idx1)
+            } else {
+                // Standard winding for the top cap
+                capIndices.push(idx0, idx1, idx2)
+            }
+        }
+
+        const capGeom = new THREE.BufferGeometry()
+        capGeom.setIndex(capIndices)
+        capGeom.setAttribute(
+            'position',
+            new THREE.Float32BufferAttribute(capVerticesFinal, 3)
+        )
+        capGeom.setAttribute('uv', new THREE.Float32BufferAttribute(capUVs, 2))
+        capGeom.computeVertexNormals()
+
+        // NOTE: 'defaultMaterial' must be defined and available in the scope.
+        return new THREE.Mesh(capGeom, defaultMaterial.clone())
+    }
+
+    // 4. Generate Meshes for all extracted Path2d targets (Unchanged)
+
+    var cirPaths = circularPath.getPoints()
+    //jlog("cirPaths",cirPaths)
+
+    for (var v = 0; v < cirPaths.length; v++) {
+        var lpath = []
+        var apath = cirPaths[v].outerPoints
+        //jlog("aparh",apath)
+        for (var i = 0; i < apath.length; i++) {
+            if (i == 0) {
+                lpath.push('m', apath[i].x, apath[i].y)
+                //jlog('apath[i]', apath[i])
+            } else {
+                lpath.push('l', apath[i].x, apath[i].y)
+            }
+        }
+        var fpath = new Path2d().path(lpath).fn(circularPath._fn)
+
+        genFromShapeData(fpath, false)
+
+        var hpaths = cirPaths[v].holePoints
+        for (var j = 0; j < hpaths.length; j++) {
+            lpath = []
+            apath = hpaths[j]
+            for (var i = 0; i < apath.length; i++) {
+                if (i == 0) {
+                    lpath.push('m', apath[i].x, apath[i].y)
+                    //jlog('apath[i]', apath[i])
+                } else {
+                    lpath.push('l', apath[i].x, apath[i].y)
+                }
+            }
+            fpath = new Path2d().path(lpath).fn(circularPath._fn)
+
+            genFromShapeData(fpath, true)
+        }
+    }
+	
+	
+	// TOP CAP (Pass outer points and hole arrays)
+    const topCapMesh = createCapGeometry(topCapPoints, topHolePointArrays, true); // isBottomCap = false
+    if (topCapMesh) { meshes.push(topCapMesh); }
+
+    // BOTTOM CAP (Pass outer points and hole arrays)
+    const bottomCapMesh = createCapGeometry(bottomCapPoints, bottomHolePointArrays, false); // isBottomCap = true (reversed winding)
+    if (bottomCapMesh) { meshes.push(bottomCapMesh); }
+
+
+    return meshes
+}
+
+//*/
+
+
 
 /////////////////////////////////
 
@@ -3853,7 +4323,7 @@ function linePaths3d(target, commandPath) {
         // Extrude main outline and then all holes
         extrudeContour(contourPoints, false)
         for (const hole of holePoints) {
-            extrudeContour(hole, true)
+            extrudeContour(hole, false)
         }
 
         // --- 6. Finalize Geometry (Indexed BufferGeometry) ---
@@ -5695,8 +6165,9 @@ const _exportedFunctions = {
     arcPath3d,
 
     Path2d,
-	Path3d,
+    Path3d,
     extrude3d,
+    sweep3d,
 
     linePaths3d, // this is the new linePaths3dEx
     scaleTo,
