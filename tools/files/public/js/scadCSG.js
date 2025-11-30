@@ -3564,7 +3564,7 @@ function extrude3d(target, commandPath) {
 
         extrudeContour(contourPoints, false) // Extrude main outline
         for (const hole of holePoints) {
-            extrudeContour(hole, false) // Extrude holes with reversed winding
+            extrudeContour(hole, true) // Extrude holes with reversed winding
         }
 
         // Finalize Geometry
@@ -3603,11 +3603,23 @@ function sweep3d(circularPath, wallPath, holeWallPath) {
     //var path2dTargets = [wallPath]
 
     const convertToVector2 = (p) => new THREE.Vector2(p.x, p.y)
-    var wallPoints = () =>
-        wallPath.getPoints()[0].outerPoints.map(convertToVector2)
+    var wallPoints = () => {
+       var v= wallPath.getPoints()[0].outerPoints.map(convertToVector2)//.reverse()
+	   var v1=v[0];
+	   var v2=v[v.length-1];
+	   if(v2.y<v1.y) return v.reverse();
+	   return v;
+	};
+	
 		
-	var holeWallPoints = () =>
-        holeWallPath.getPoints()[0].outerPoints.map(convertToVector2)
+	var holeWallPoints = () => {
+        var v = holeWallPath.getPoints()[0].outerPoints.map(convertToVector2)//.reverse()
+		var v1=v[0];
+	   	var v2=v[v.length-1];
+	   	if(v2.y<v1.y) return v.reverse();
+		return v;
+	};
+	
 		
 		
     
@@ -3819,12 +3831,12 @@ function sweep3d(circularPath, wallPath, holeWallPath) {
                         contourStartVertexCount + (i + 1) * numPoints + j
 
                     //if (!reverseWinding) {
-                        r.indices.push(idx_a, idx_d, idx_c)
-                        r.indices.push(idx_a, idx_c, idx_b)
+                        //r.indices.push(idx_a, idx_d, idx_c)
+                        //r.indices.push(idx_a, idx_c, idx_b)
                     //} else {
                         // Reverse winding for holes
-                        //r.indices.push(idx_a, idx_b, idx_c)
-                        //r.indices.push(idx_a, idx_c, idx_d)
+                        r.indices.push(idx_a, idx_b, idx_c)
+                        r.indices.push(idx_a, idx_c, idx_d)
                     //}
                 }
             }
@@ -3872,15 +3884,15 @@ function sweep3d(circularPath, wallPath, holeWallPath) {
             minY = Infinity,
             maxX = -Infinity,
             maxY = -Infinity
-        const contour3DPoints = []
-        const projected2DPoints = [] // Outer contour for THREE.Shape
+        var contour3DPoints = []
+        var projected2DPoints = [] // Outer contour for THREE.Shape
 
         // Process Outer Contour
         for (let i = 0; i < outer3DPoints.length; i += 3) {
-            const x = outer3DPoints[i]
-            const y = outer3DPoints[i + 1]
-            const z = outer3DPoints[i + 2]
-            const v3 = new THREE.Vector3(x, y, z)
+            var x = outer3DPoints[i]
+            var y = outer3DPoints[i + 1]
+            var z = outer3DPoints[i + 2]
+            var v3 = new THREE.Vector3(x, y, z)
             contour3DPoints.push(v3)
 
             projected2DPoints.push(new THREE.Vector2(x, y))
@@ -3894,13 +3906,13 @@ function sweep3d(circularPath, wallPath, holeWallPath) {
         // Process Hole Contours (needed for THREE.ShapeUtils.triangulateShape)
         const projectedHoles2D = []
 
-        for (const hole3DPoints of hole3DPointArrays) {
-            const hole2DPoints = []
+        for (var hole3DPoints of hole3DPointArrays) {
+            var hole2DPoints = []
             for (let i = 0; i < hole3DPoints.length; i += 3) {
-                const x = hole3DPoints[i]
-                const y = hole3DPoints[i + 1]
-                const z = hole3DPoints[i + 2]
-                const v3 = new THREE.Vector3(x, y, z)
+                var x = hole3DPoints[i]
+                var y = hole3DPoints[i + 1]
+                var z = hole3DPoints[i + 2]
+                var v3 = new THREE.Vector3(x, y, z)
 
                 // Add hole 3D point to the main vertex array
                 contour3DPoints.push(v3)
@@ -3924,15 +3936,15 @@ function sweep3d(circularPath, wallPath, holeWallPath) {
         }
 
         // 2. Triangulate the 2D Shape - PASSING THE HOLES ARRAY
-        const triangles = THREE.ShapeUtils.triangulateShape(
+        var triangles = THREE.ShapeUtils.triangulateShape(
             projected2DPoints,
             projectedHoles2D // <--- Pass 2D hole contours for triangulation
         )
 
         // 3. Setup Final Vertices, Indices, and UVs arrays
-        const capVerticesFinal = []
-        const capIndices = []
-        const capUVs = []
+        var capVerticesFinal = []
+        var capIndices = []
+        var capUVs = []
 
         // Add all 3D contour (outer and holes) vertices to the final array
         for (const v of contour3DPoints) {
@@ -3945,11 +3957,11 @@ function sweep3d(circularPath, wallPath, holeWallPath) {
         // 4. Generate Indices from the Triangulation result
         for (const triangle of triangles) {
             // The indices from triangulateShape refer to the indices in contour3DPoints.
-            const idx0 = triangle[0]
-            const idx1 = triangle[1]
-            const idx2 = triangle[2]
+            var idx0 = triangle[0]
+            var idx1 = triangle[1]
+            var idx2 = triangle[2]
 
-            if (isBottomCap) {
+            if (!isBottomCap) {
                 // Reverse winding for the bottom cap
                 capIndices.push(idx0, idx2, idx1)
             } else {
@@ -3958,7 +3970,7 @@ function sweep3d(circularPath, wallPath, holeWallPath) {
             }
         }
 
-        const capGeom = new THREE.BufferGeometry()
+        var capGeom = new THREE.BufferGeometry()
         capGeom.setIndex(capIndices)
         capGeom.setAttribute(
             'position',
@@ -4020,7 +4032,7 @@ function sweep3d(circularPath, wallPath, holeWallPath) {
     if (bottomCapMesh) { meshes.push(bottomCapMesh); }
 
 
-    return meshes
+    return union( meshes)
 }
 
 //*/
