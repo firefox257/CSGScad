@@ -241,6 +241,7 @@ function cylinder({ d, dt, db, r, rt, rb, h, fn } = {}) {
 function translate([x, y, z], ...target) {
     applyToMesh(target, (item) => {
         //item.position.set(x, z, y)
+		
         item.geometry.translate(x, y, z)
     })
     return target
@@ -266,14 +267,30 @@ function scale([x, y, z], ...target) {
     return target
 }
 
-function floor(...target) {
-    applyToMesh(target, (item) => {
-        item.geometry.computeBoundingBox()
-        const zMin = item.geometry.boundingBox.min.z
-        item.position.z += -(zMin + item.position.z)
-    })
 
-    return target
+function expand(...target) {
+	var meshs=[]
+	applyToMesh(target, (item) => {
+        meshs.push(item)
+    })
+	return meshs
+}
+
+
+
+
+function floor(...target) {
+	for(var i=0; i<target.length;i++){
+		_floor(target[i])
+	}
+	return target;
+}
+
+function _floor(...target) {
+	
+	const bbox = boundingBox(...target);
+	translate([0,0,-bbox.min.z], target);
+    
 }
 
 function convexHull(...target) {
@@ -312,75 +329,62 @@ function convexHull(...target) {
     return new THREE.Mesh(hullGeometry, defaultMaterial.clone())
 }
 
-function align(config = {}, target) {
-    // ...meshes) {
 
-    var meshes = []
 
-    applyToMesh(target, (item) => {
-        meshes.push(item)
-    })
-
-    const newMeshes = []
-
-    const alignMesh = (mesh) => {
-        if (!mesh || !mesh.geometry) {
-            PrintWarn('Align function requires a valid mesh.')
-            return
-        }
-
-        mesh.geometry.computeBoundingBox()
-        const bbox = mesh.geometry.boundingBox
-        const center = new THREE.Vector3()
-        bbox.getCenter(center)
-
-        const offset = new THREE.Vector3()
-
-        if (config.lx !== undefined) {
-            offset.x = config.lx - bbox.min.x
-        } else if (config.rx !== undefined) {
-            offset.x = config.rx - bbox.max.x
-        } else if (config.cx !== undefined) {
-            offset.x = config.cx - center.x
-        }
-
-        if (config.uy !== undefined) {
-            offset.y = config.uy - bbox.max.y
-        } else if (config.dy !== undefined) {
-            offset.y = config.dy - bbox.min.y
-        } else if (config.cy !== undefined) {
-            offset.y = config.cy - center.y
-        }
-
-        if (config.bz !== undefined) {
-            offset.z = config.bz - bbox.min.z
-        } else if (config.tz !== undefined) {
-            offset.z = config.tz - bbox.max.z
-        } else if (config.cz !== undefined) {
-            offset.z = config.cz - center.z
-        }
-
-        mesh.position.add(offset)
-        newMeshes.push(mesh)
+function align(config = {}, ...target){
+	for(var i= 0; i< target.length;i++){
+		_align(config, target[i]);
+	}
+	return target;
+}
+function _align(config = {}, ...target) {
+    
+	
+	const bbox = boundingBox(...target)
+	
+	const center = {
+		x: (bbox.min.x+bbox.max.x)/2,
+		y: (bbox.min.y+bbox.max.y)/2,
+		z: (bbox.min.z+bbox.max.z)/2
+	}
+	
+	let offset = new THREE.Vector3()
+	if (config.lx !== undefined) {
+        offset.x = config.lx - bbox.min.x
+    } else if (config.rx !== undefined) {
+        offset.x = config.rx - bbox.max.x
+    } else if (config.cx !== undefined) {
+        offset.x = config.cx - center.x
     }
-
-    meshes.forEach(alignMesh)
-    return newMeshes.length === 1 ? newMeshes[0] : newMeshes
+	
+    if (config.uy !== undefined) {
+        offset.y = config.uy - bbox.max.y
+    } else if (config.dy !== undefined) {
+        offset.y = config.dy - bbox.min.y
+    } else if (config.cy !== undefined) {
+        offset.y = config.cy - center.y
+    }
+	
+    if (config.bz !== undefined) {
+        offset.z = config.bz - bbox.min.z
+    } else if (config.tz !== undefined) {
+        offset.z = config.tz - bbox.max.z
+    } else if (config.cz !== undefined) {
+        offset.z = config.cz - center.z
+    }
+	
+	translate([offset.x, offset.y, offset.z], target)
+	
 }
 
-/* eslint-disable */
 
-//*/
-
-//*/
 
 /**
  * @param {object} path - An object containing the path array and default segments.
  * @param {string[]} path.path - An array representing the 3D path commands and parameters.
  * @param {number} path.fn - The default number of segments for curves.
- * @returns {object} An object containing the new path points (p), rotations (r), scales (s), and normals (n).
- */
-//old good
+// @returns {object} An object containing the new path points (p), rotations (r), scales (s), and normals (n).
+ 
 
 function path3d(path) {
     const paths = path.path
@@ -3647,12 +3651,13 @@ function sweep3d(circularPath, wallPath, holeWallPath) {
 
         let initialRotationRadians = 0
 
-        //if (path.xyInitAng) {
-        initialRotationRadians = Math.atan2(dy, dx) + Math.PI / 2
-        //} else {
-        //initialRotationRadians = Math.PI / 2
-        //}
+        if (path.xyInitAng) {
+        	initialRotationRadians = Math.atan2(dy, dx) + Math.PI / 2
+        } else {
+        	initialRotationRadians = Math.PI / 2
+        }
 
+		//here
         const cosR = Math.cos(initialRotationRadians)
         const sinR = Math.sin(initialRotationRadians)
 
@@ -3843,6 +3848,7 @@ function sweep3d(circularPath, wallPath, holeWallPath) {
             return r
         }
 
+		//here1
         // --- Execution ---
 
         // 1. Generate all vertices and wall indices for the outer contour
@@ -4717,6 +4723,7 @@ function boundingBox(...target) {
             y: masterBox.max.y,
             z: masterBox.max.z
         }
+		
     }
 }
 
@@ -4815,8 +4822,13 @@ function boundingBoxPath(pathObject) {
  * @param {object} obj - The primary reference object. This object's position remains unchanged.
  * @param {...object} target - The objects to be moved (aligned and translated).
  */
-
 function placement(offsets = {}, obj, ...target) {
+	const objBounds = boundingBox(obj)
+	for(var i=0; i< target.length;i++){
+		_placement(objBounds, offsets, obj, target[i])
+	}
+}
+function _placement(objBounds, offsets = {}, obj, ...target) {
     if (!obj) {
         PrintError(
             'Placement function requires a valid reference object (obj).'
@@ -4827,7 +4839,7 @@ function placement(offsets = {}, obj, ...target) {
     // [ ... function body from the previous response ... ]
 
     // 1. Calculate the Z-up world bounding box of the reference object (obj).
-    const objBounds = boundingBox(obj)
+    //const objBounds = boundingBox(obj)
     const targetBounds = boundingBox(...target)
     //PrintLog(JSON.stringify(objBounds))
     //PrintLog(JSON.stringify(objBounds))
@@ -4926,9 +4938,10 @@ function placement(offsets = {}, obj, ...target) {
         PrintError('All placment offsets need to be defined.')
         return
     }
-
+	
     translate([ox - tx + xx, oy - ty + yy, oz - tz + zz], ...target)
-
+	
+	
     return [obj, ...target]
 }
 
@@ -5699,6 +5712,14 @@ function text(textData) {
 }
 //*/
 
+
+
+
+
+
+
+
+
 // A new ASCII STL parser that ignores normals and just gets vertices
 function parseAsciiStl(text) {
     const vertices = []
@@ -5739,7 +5760,7 @@ function parseBinaryStl(buffer) {
 
     const triangleCount = dataView.getUint32(offset, true)
     offset += 4
-
+	jlog("triangleCount",triangleCount)
     const vertices = new Float32Array(triangleCount * 3 * 3)
     let vertexIndex = 0
 
@@ -5804,17 +5825,16 @@ function generateUVs(geometry) {
     geometry.setAttribute('uv', new Float32BufferAttribute(uvArray, 2))
 }
 
-/**
- * Imports an STL file (binary or ASCII) and returns a three-bvh-csg Brush.
- * @param {string} filePath - The path to the STL file.
- * @returns {Promise<Brush>} A Promise resolving to a Brush object.
- */
+
+ // Imports an STL file (binary or ASCII) and returns a three-bvh-csg Brush.
+ // @param {string} filePath - The path to the STL file.
+ // @returns {Promise<Brush>} A Promise resolving to a Brush object.
 async function importStl(filePath) {
     try {
         const buffer = await api.readFileBinary($path(filePath))
 
         const header = new TextDecoder().decode(buffer.slice(0, 5))
-        let geometry
+        var geometry
 
         if (header.toLowerCase() === 'solid') {
             const text = new TextDecoder().decode(buffer)
@@ -5828,7 +5848,7 @@ async function importStl(filePath) {
                 'Parsed geometry is missing required attributes (position or uv).'
             )
         }
-
+		//jlog("geometry",geometry)
         //const brush = new Brush(geometry);
         //return brush;
         return new THREE.Mesh(geometry, defaultMaterial.clone())
@@ -5837,6 +5857,8 @@ async function importStl(filePath) {
         throw error
     }
 }
+
+//*/
 
 /**
  * Loads a GLB file and returns an array of three-bvh-csg Brush objects.
@@ -6169,6 +6191,7 @@ const _exportedFunctions = {
     rotate,
     scale,
     color,
+	expand,
     floor,
     convexHull,
     align,
