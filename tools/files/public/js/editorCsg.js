@@ -20,6 +20,8 @@ const LAST_CONSOLE_HEIGHT_KEY = 'csg-editor-console-height'
 const DEFAULT_CSG_PAGE_TITLE = 'Main'
 const DEFAULT_CSG_CODE_CONTENT = `
 // CSG code goes here 
+
+// CSG code goes here 
 var f1 = await font("/fonts/ClassicRomanCaps.ttf");
 var ts= text({
 		font:f1,
@@ -27,21 +29,19 @@ var ts= text({
 		fn:30,
 		fontSize:9
 	});
-ts= alignPath({cx:0,cy:0},ts)
-var s1=shape(ts);
-
-var p1={
-	path:[
+	
+alignPath({cx:0,cy:0},ts)
+rotatePath(90,ts)
+var p1= new Path3d().path([
 		"m", 0,0, 0,
 		"s",1,1,
 		"l", 0,0, 3
-	],
-	fn:30
-}
+	]).fn(30)
 
 
 
-return linePaths3dEx(s1, p1);
+return extrude3d(ts, p1);
+
 
 `
 const DEFAULT_CODE_PAGE_TITLE = 'Code'

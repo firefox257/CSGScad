@@ -1634,9 +1634,7 @@ function convertTo3d(path, z = 0) {
 
 //work on helper path functions
 
-function arch2dSmooth() {}
 
-function quadraticSmothing() {}
 
 function arcPath3d(config) {
     const { startAng, endAng, fn, d } = config
@@ -1833,7 +1831,17 @@ class Path2d {
         if (this._tpath === undefined) {
             this._tessellate()
         }
-        return this._getBoundingBox(this._tpath)
+        let box= this._getBoundingBox(this._tpath)
+		return {
+			min:{
+				x:box.minX,
+				y:box.minY
+			},
+			max:{
+				x:box.maxX,
+				y:box.maxY
+			}
+		}
     }
 
     /// @private
@@ -3549,13 +3557,13 @@ function extrude3d(target, commandPath) {
                     const idx_d =
                         contourStartVertexCount + (i + 1) * numPoints + j
 
-                    if (!reverseWinding) {
-                        indices.push(idx_a, idx_d, idx_c)
-                        indices.push(idx_a, idx_c, idx_b)
-                    } else {
+                    //if (reverseWinding) {
+                        //indices.push(idx_a, idx_d, idx_c)
+                        //indices.push(idx_a, idx_c, idx_b)
+                    //} else {
                         indices.push(idx_a, idx_b, idx_c)
                         indices.push(idx_a, idx_c, idx_d)
-                    }
+                    //}
                 }
             }
         }
@@ -4957,15 +4965,15 @@ function translatePath([x, y], pathObject) {
 
     const newPath = []
     let i = 0
-    while (i < pathObject.path.length) {
-        const command = pathObject.path[i]
+    while (i < pathObject._path.length) {
+        const command = pathObject._path[i]
         newPath.push(command)
         i++
         switch (command) {
             // Absolute commands with 1 point: m, l
             case 'm':
             case 'l':
-                newPath.push(pathObject.path[i] + x, pathObject.path[i + 1] + y)
+                newPath.push(pathObject._path[i] + x, pathObject._path[i + 1] + y)
                 i += 2
                 break
 
@@ -4973,10 +4981,10 @@ function translatePath([x, y], pathObject) {
             case 'q':
             case 'x':
                 newPath.push(
-                    pathObject.path[i] + x, // Point 1 X (Control for q, Ctr for x)
-                    pathObject.path[i + 1] + y, // Point 1 Y
-                    pathObject.path[i + 2] + x, // Point 2 X (End for q, End for x)
-                    pathObject.path[i + 3] + y
+                    pathObject._path[i] + x, // Point 1 X (Control for q, Ctr for x)
+                    pathObject._path[i + 1] + y, // Point 1 Y
+                    pathObject._path[i + 2] + x, // Point 2 X (End for q, End for x)
+                    pathObject._path[i + 3] + y
                 )
                 i += 4
                 break
@@ -4984,12 +4992,12 @@ function translatePath([x, y], pathObject) {
             // Absolute command with 3 points: c
             case 'c':
                 newPath.push(
-                    pathObject.path[i] + x, // Control Point 1 X
-                    pathObject.path[i + 1] + y, // Control Point 1 Y
-                    pathObject.path[i + 2] + x, // Control Point 2 X
-                    pathObject.path[i + 3] + y, // Control Point 2 Y
-                    pathObject.path[i + 4] + x, // End Point X
-                    pathObject.path[i + 5] + y
+                    pathObject._path[i] + x, // Control Point 1 X
+                    pathObject._path[i + 1] + y, // Control Point 1 Y
+                    pathObject._path[i + 2] + x, // Control Point 2 X
+                    pathObject._path[i + 3] + y, // Control Point 2 Y
+                    pathObject._path[i + 4] + x, // End Point X
+                    pathObject._path[i + 5] + y
                 )
                 i += 6
                 break
@@ -4998,29 +5006,29 @@ function translatePath([x, y], pathObject) {
             // Relative coordinates are invariant under translation, so they are pushed as is.
             case 'mr':
             case 'lr': {
-                newPath.push(pathObject.path[i], pathObject.path[i + 1])
+                newPath.push(pathObject._path[i], pathObject._path[i + 1])
                 i += 2
                 break
             }
             case 'qr':
             case 'xr': {
                 newPath.push(
-                    pathObject.path[i],
-                    pathObject.path[i + 1],
-                    pathObject.path[i + 2],
-                    pathObject.path[i + 3]
+                    pathObject._path[i],
+                    pathObject._path[i + 1],
+                    pathObject._path[i + 2],
+                    pathObject._path[i + 3]
                 )
                 i += 4
                 break
             }
             case 'cr': {
                 newPath.push(
-                    pathObject.path[i],
-                    pathObject.path[i + 1],
-                    pathObject.path[i + 2],
-                    pathObject.path[i + 3],
-                    pathObject.path[i + 4],
-                    pathObject.path[i + 5]
+                    pathObject._path[i],
+                    pathObject._path[i + 1],
+                    pathObject._path[i + 2],
+                    pathObject._path[i + 3],
+                    pathObject._path[i + 4],
+                    pathObject._path[i + 5]
                 )
                 i += 6
                 break
@@ -5037,7 +5045,7 @@ function translatePath([x, y], pathObject) {
                         ? 2
                         : 0
                 for (let k = 0; k < numArgs; k++) {
-                    newPath.push(pathObject.path[i + k])
+                    newPath.push(pathObject._path[i + k])
                 }
                 i += numArgs
                 break
@@ -5045,7 +5053,10 @@ function translatePath([x, y], pathObject) {
                 break
         }
     }
-    return { path: newPath, fn: pathObject.fn }
+	
+	pathObject.path(newPath);
+	return pathObject;
+    //return { path: newPath, fn: pathObject.fn }
 }
 
 // ----------------------------------------------------------------------------------------------------------------------
@@ -5067,8 +5078,8 @@ function rotatePath(angle, pathObject) {
     // Helper function for rotation: x' = x cos + y sin, y' = -x sin + y cos
     const rotate = (x, y) => [x * cos + y * sin, -x * sin + y * cos]
 
-    while (i < pathObject.path.length) {
-        const command = pathObject.path[i]
+    while (i < pathObject._path.length) {
+        const command = pathObject._path[i]
         newPath.push(command)
         i++
         let x, y, x1, y1, x2, y2, rotated
@@ -5079,8 +5090,8 @@ function rotatePath(angle, pathObject) {
             case 'mr':
             case 'l':
             case 'lr':
-                x = pathObject.path[i]
-                y = pathObject.path[i + 1]
+                x = pathObject._path[i]
+                y = pathObject._path[i + 1]
                 rotated = rotate(x, y)
                 newPath.push(rotated[0], rotated[1])
                 i += 2
@@ -5091,10 +5102,10 @@ function rotatePath(angle, pathObject) {
             case 'qr':
             case 'x':
             case 'xr':
-                x1 = pathObject.path[i] // Point 1 X
-                y1 = pathObject.path[i + 1] // Point 1 Y
-                x = pathObject.path[i + 2] // Point 2 X
-                y = pathObject.path[i + 3] // Point 2 Y
+                x1 = pathObject._path[i] // Point 1 X
+                y1 = pathObject._path[i + 1] // Point 1 Y
+                x = pathObject._path[i + 2] // Point 2 X
+                y = pathObject._path[i + 3] // Point 2 Y
 
                 const rotated1 = rotate(x1, y1)
                 const rotatedEnd = rotate(x, y)
@@ -5111,12 +5122,12 @@ function rotatePath(angle, pathObject) {
             // Commands with three points: c, cr (Absolute and Relative points must be rotated)
             case 'c':
             case 'cr':
-                x1 = pathObject.path[i] // Control Point 1 X
-                y1 = pathObject.path[i + 1] // Control Point 1 Y
-                x2 = pathObject.path[i + 2] // Control Point 2 X
-                y2 = pathObject.path[i + 3] // Control Point 2 Y
-                x = pathObject.path[i + 4] // End Point X
-                y = pathObject.path[i + 5] // End Point Y
+                x1 = pathObject._path[i] // Control Point 1 X
+                y1 = pathObject._path[i + 1] // Control Point 1 Y
+                x2 = pathObject._path[i + 2] // Control Point 2 X
+                y2 = pathObject._path[i + 3] // Control Point 2 Y
+                x = pathObject._path[i + 4] // End Point X
+                y = pathObject._path[i + 5] // End Point Y
 
                 const rotatedA = rotate(x1, y1)
                 const rotatedB = rotate(x2, y2)
@@ -5144,7 +5155,7 @@ function rotatePath(angle, pathObject) {
                         ? 2
                         : 0
                 for (let k = 0; k < numArgs; k++) {
-                    newPath.push(pathObject.path[i + k])
+                    newPath.push(pathObject._path[i + k])
                 }
                 i += numArgs
                 break
@@ -5152,7 +5163,9 @@ function rotatePath(angle, pathObject) {
                 break
         }
     }
-    return { path: newPath, fn: pathObject.fn }
+	
+	pathObject.path(newPath)
+    //return { path: newPath, fn: pathObject.fn }
 }
 
 /**
@@ -5168,8 +5181,8 @@ function scalePath([scaleX, scaleY], pathObject) {
     // Helper function to scale a single coordinate pair
     const scalePoint = (x, y) => [x * scaleX, y * scaleY]
 
-    while (i < pathObject.path.length) {
-        const command = pathObject.path[i]
+    while (i < pathObject._path.length) {
+        const command = pathObject._path[i]
         newPath.push(command)
         i++
         let x, y, x1, y1, x2, y2, scaledPoint
@@ -5180,8 +5193,8 @@ function scalePath([scaleX, scaleY], pathObject) {
             case 'mr':
             case 'l':
             case 'lr':
-                x = pathObject.path[i]
-                y = pathObject.path[i + 1]
+                x = pathObject._path[i]
+                y = pathObject._path[i + 1]
                 scaledPoint = scalePoint(x, y)
                 newPath.push(scaledPoint[0], scaledPoint[1])
                 i += 2
@@ -5192,10 +5205,10 @@ function scalePath([scaleX, scaleY], pathObject) {
             case 'qr':
             case 'x': // Absolute Arc with 3 points: P0 (cp), P1 (Ctr), P2 (End). Arguments are P1, P2.
             case 'xr': // Relative Arc with 3 points. Arguments are P1_rel, P2_rel.
-                x1 = pathObject.path[i] // Point 1 X
-                y1 = pathObject.path[i + 1] // Point 1 Y
-                x = pathObject.path[i + 2] // Point 2 X
-                y = pathObject.path[i + 3] // Point 2 Y
+                x1 = pathObject._path[i] // Point 1 X
+                y1 = pathObject._path[i + 1] // Point 1 Y
+                x = pathObject._path[i + 2] // Point 2 X
+                y = pathObject._path[i + 3] // Point 2 Y
 
                 const scaled1 = scalePoint(x1, y1)
                 const scaledEnd = scalePoint(x, y)
@@ -5212,12 +5225,12 @@ function scalePath([scaleX, scaleY], pathObject) {
             // Commands with three points: c, cr (Absolute and Relative points are scaled)
             case 'c':
             case 'cr':
-                x1 = pathObject.path[i] // Control Point 1 X
-                y1 = pathObject.path[i + 1] // Control Point 1 Y
-                x2 = pathObject.path[i + 2] // Control Point 2 X
-                y2 = pathObject.path[i + 3] // Control Point 2 Y
-                x = pathObject.path[i + 4] // End Point X
-                y = pathObject.path[i + 5] // End Point Y
+                x1 = pathObject._path[i] // Control Point 1 X
+                y1 = pathObject._path[i + 1] // Control Point 1 Y
+                x2 = pathObject._path[i + 2] // Control Point 2 X
+                y2 = pathObject._path[i + 3] // Control Point 2 Y
+                x = pathObject._path[i + 4] // End Point X
+                y = pathObject._path[i + 5] // End Point Y
 
                 const scaledA = scalePoint(x1, y1)
                 const scaledB = scalePoint(x2, y2)
@@ -5237,10 +5250,10 @@ function scalePath([scaleX, scaleY], pathObject) {
             // Elliptical Arc commands (a, e): center and radii are scaled
             case 'a':
             case 'e':
-                const centerX = pathObject.path[i]
-                const centerY = pathObject.path[i + 1]
-                const radiusX = pathObject.path[i + 2]
-                const radiusY = pathObject.path[i + 3]
+                const centerX = pathObject._path[i]
+                const centerY = pathObject._path[i + 1]
+                const radiusX = pathObject._path[i + 2]
+                const radiusY = pathObject._path[i + 3]
 
                 newPath.push(
                     centerX * scaleX, // Scaled Center X
@@ -5249,7 +5262,7 @@ function scalePath([scaleX, scaleY], pathObject) {
                     radiusY * scaleY, // Scaled Radius Y
                     pathObject.path[i + 4], // Start Angle (Angles are invariant to uniform scaling)
                     pathObject.path[i + 5], // End Angle
-                    ...(command === 'e' ? [pathObject.path[i + 6]] : []) // flags
+                    ...(command === 'e' ? [pathObject._path[i + 6]] : []) // flags
                 )
                 i += command === 'a' ? 6 : 7
                 break
@@ -5265,7 +5278,7 @@ function scalePath([scaleX, scaleY], pathObject) {
                         ? 2
                         : 0
                 for (let k = 0; k < numArgs; k++) {
-                    newPath.push(pathObject.path[i + k])
+                    newPath.push(pathObject._path[i + k])
                 }
                 i += numArgs
                 break
@@ -5274,7 +5287,10 @@ function scalePath([scaleX, scaleY], pathObject) {
                 break
         }
     }
-    return { path: newPath, fn: pathObject.fn }
+	
+	pathObject.path(newPath)
+	
+    //return { path: newPath, fn: pathObject.fn }
 }
 
 /**
@@ -5284,18 +5300,26 @@ function scalePath([scaleX, scaleY], pathObject) {
  * @returns {object} A new path data object scaled to the target dimensions.
  */
 function scaleToPath(config = {}, pathObject) {
-    const bbox = boundingBoxPath(pathObject)
-    const currentWidth = bbox.maxX - bbox.minX
-    const currentHeight = bbox.maxY - bbox.minY
-
-    let scaleFactor = 1
+    const bbox = pathObject.boundingBox();//boundingBoxPath(pathObject)
+    const currentWidth = bbox.max.x - bbox.min.x
+    const currentHeight = bbox.max.y - bbox.min.y
+	
+	if(config.x=== undefined && config.y === undefined) {
+		return;	
+	}
+	
+    var scaleFactorX;
+	var scaleFactorY;
     if (config.x !== undefined && currentWidth > 0) {
-        scaleFactor = config.x / currentWidth
-    } else if (config.y !== undefined && currentHeight > 0) {
-        scaleFactor = config.y / currentHeight
+        scaleFactorX = config.x / currentWidth
+		if(config.y===undefined) scaleFactorY=scaleFactorX
+    } 
+	if (config.y !== undefined && currentHeight > 0) {
+        scaleFactorY = config.y / currentHeight
+		if(config.x===undefined) scaleFactorX=scaleFactorY
     }
-
-    return scalePath([scaleFactor, scaleFactor], pathObject)
+	
+    scalePath([scaleFactorX, scaleFactorY], pathObject)
 }
 
 /**
@@ -5305,9 +5329,9 @@ function scaleToPath(config = {}, pathObject) {
  * @returns {object} A new path data object scaled by the added dimensions.
  */
 function scaleAddPath(config = {}, pathObject) {
-    const bbox = boundingBoxPath(pathObject)
-    const currentWidth = bbox.maxX - bbox.minX
-    const currentHeight = bbox.maxY - bbox.minY
+    const bbox = pathObject.boundingBox()//boundingBoxPath(pathObject)
+    const currentWidth = bbox.max.x - bbox.min.x
+    const currentHeight = bbox.max.y - bbox.min.y
 
     let scaleX = 1
     let scaleY = 1
@@ -5320,7 +5344,7 @@ function scaleAddPath(config = {}, pathObject) {
         scaleY = (currentHeight + config.y) / currentHeight
     }
 
-    return scalePath([scaleX, scaleY], pathObject)
+    scalePath([scaleX, scaleY], pathObject)
 }
 
 /**
@@ -5330,9 +5354,8 @@ function scaleAddPath(config = {}, pathObject) {
  * @returns {object} A new path data object that is aligned.
  */
 function alignPath(config = {}, pathObject) {
-    const bbox = boundingBoxPath(pathObject)
-    //PrintLog("bbox: "+JSON.stringify(bbox))
-
+    const bbox = pathObject.boundingBox()//boundingBoxPath(pathObject)
+    //
     const currentCx = (bbox.min.x + bbox.max.x) / 2
     const currentCy = (bbox.min.y + bbox.max.y) / 2
 
@@ -5356,8 +5379,8 @@ function alignPath(config = {}, pathObject) {
     } else if (config.cy !== undefined) {
         offsetY = config.cy - currentCy
     }
-
-    return translatePath([offsetX, offsetY], pathObject)
+	
+    translatePath([offsetX, offsetY], pathObject)
 }
 
 /**
@@ -5708,7 +5731,8 @@ function text(textData) {
             glyph.advanceWidth * (textData.fontSize / textData.font.unitsPerEm)
     }
 
-    return { path: allCommands, fn: textData.fn || 40 } // Include fn here for consistency
+    //return { path: allCommands, fn: textData.fn || 40 } // Include fn here for consistency
+	return new Path2d().path(allCommands).fn(textData.fn)
 }
 //*/
 
