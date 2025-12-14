@@ -19,9 +19,8 @@ const LAST_CONSOLE_HEIGHT_KEY = 'csg-editor-console-height'
 // New constants for default project content
 const DEFAULT_CSG_PAGE_TITLE = 'Main'
 const DEFAULT_CSG_CODE_CONTENT = `
-// CSG code goes here 
 
-// CSG code goes here 
+// CSG code goes here  
 var f1 = await font("/fonts/ClassicRomanCaps.ttf");
 var ts= text({
 		font:f1,
@@ -33,14 +32,17 @@ var ts= text({
 alignPath({cx:0,cy:0},ts)
 rotatePath(90,ts)
 var p1= new Path3d().path([
+		"s", 1,1,
 		"m", 0,0, 0,
-		"s",1,1,
+		"s",1.1,1.1,
 		"l", 0,0, 3
 	]).fn(30)
 
 
 
 return extrude3d(ts, p1);
+
+
 
 
 `

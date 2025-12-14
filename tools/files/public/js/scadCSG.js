@@ -379,10 +379,10 @@ function _align(config = {}, ...target) {
 
 
 
-/**
- * @param {object} path - An object containing the path array and default segments.
- * @param {string[]} path.path - An array representing the 3D path commands and parameters.
- * @param {number} path.fn - The default number of segments for curves.
+///
+ // @param {object} path - An object containing the path array and default segments.
+ // @param {string[]} path.path - An array representing the 3D path commands and parameters.
+ // @param {number} path.fn - The default number of segments for curves.
 // @returns {object} An object containing the new path points (p), rotations (r), scales (s), and normals (n).
  
 
@@ -4697,18 +4697,25 @@ function hide(...target) {
  */
 function boundingBox(...target) {
     //var objectsArray=[];
-
+	
+	
+	
     const masterBox = new THREE.Box3()
+	
 
     applyToMesh(target, (item) => {
         //objectsArray.push(item)
         item.geometry.computeBoundingBox()
         // 2. Calculate the object's world-space bounding box (tempBox).
         const tempBox = new THREE.Box3().setFromObject(item)
-
+		
         // 3. Expand the master box to include the temporary box.
         masterBox.union(tempBox)
-    })
+		
+		
+    });
+	
+	
 
     if (masterBox.isEmpty()) {
         console.warn(
@@ -4719,7 +4726,7 @@ function boundingBox(...target) {
 
     // Return the result with min and max vectors.
     //3d printer cordinates.
-
+	
     return {
         min: {
             x: masterBox.min.x,
