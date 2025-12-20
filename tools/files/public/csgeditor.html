@@ -336,6 +336,26 @@
                     type="text"
                     id="library-path-input"
                     value="/csgLib" /><br /><br />
+					
+				
+
+
+
+				
+				<hr>
+				<h3>Export Settings</h3>
+				<label>Default Export Format:</label><br />
+				<input type="radio" id="format-stl" name="export-format" value="stl" checked>
+				<label for="format-stl">STL (.stl)</label><br />
+				<input type="radio" id="format-glb" name="export-format" value="glb">
+				<label for="format-glb">GLB (.glb)</label>
+				<br /><br />
+
+				
+					
+					
+					
+				
                 <button id="save-settings-btn">Save Settings</button>
                 <button id="clear-cache-btn">Clear All Cache</button>
             </div>
@@ -384,7 +404,7 @@
             <div class="modal-content">
                 <filepicker
                     id="save-stl-picker"
-                    useFileButtonText="Save STL"
+                    useFileButtonText="Export 3d"
                     onfilepick="handleSaveStl(event, filePath)"
                     oncancel="closeModal('save-stl-modal')">
                 </filepicker>
@@ -677,6 +697,8 @@
                 settings.plateLength = newLength
                 settings.gridSize = newGridSize
                 settings.libraryPath = newLibraryPath
+				settings.exportFormat = domElements.exportStlRadio.checked ? 'stl' : 'glb';
+
 
                 localStorage.setItem(
                     'csg-editor-settings',
@@ -729,8 +751,12 @@
 					get groupItems() {
 						return groupItems
 					},
-                    showView: showView
+                    showView: showView,
+					exportStlRadio:document.getElementById('format-stl'),
+					exportGlbRadio:document.getElementById('format-glb')
                 }
+				
+				
 
                 // Initial settings load
 
@@ -738,7 +764,8 @@
                     plateWidth: 220,
                     plateLength: 220,
                     gridSize: 10,
-                    libraryPath: '/csgLib'
+                    libraryPath: '/csgLib',
+					exportFormat:'stl'
                 }
                 const savedSettings = localStorage.getItem(
                     'csg-editor-settings'
@@ -750,7 +777,16 @@
                 domElements.lengthInput.value = settings.plateLength
                 domElements.gridSizeInput.value = settings.gridSize
                 domElements.libraryPathInput.value = settings.libraryPath
-                domElements.settings = settings
+                
+				
+				if (settings.exportFormat === 'stl') {
+					domElements.exportStlRadio.checked = true;
+				} else {
+				   	domElements.exportGlbRadio.checked = true;
+				}
+				//*/
+				
+				domElements.settings = settings
 
                 // Setup Three.js
                 setupThreeJs(domElements.canvas)
@@ -818,6 +854,8 @@
                     'click',
                     clearAllCache
                 )
+				
+				
 
                 // ✨ MODIFIED: Initialize must run before view setup so auto-load is triggered
                 initialize(domElements)

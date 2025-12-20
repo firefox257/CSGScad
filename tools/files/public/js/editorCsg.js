@@ -3,12 +3,16 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { STLExporter } from 'three/addons/exporters/STLExporter.js'
+import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js'; // Add this
+
 import { ezport } from './scadCSG.js'
 import { Brush } from 'three-bvh-csg'
 import { api } from 'apiCalls'
 
 const exportedCSG = ezport()
 const exporter = new STLExporter()
+const gltfExporter = new GLTFExporter(); // Add this
+
 
 // Local Storage Keys for the last project and console
 const LAST_PROJECT_PATH_KEY = 'scad_last_project_path'
@@ -41,9 +45,6 @@ var p1= new Path3d().path([
 
 
 return extrude3d(ts, p1);
-
-
-
 
 `
 const DEFAULT_CODE_PAGE_TITLE = 'Code'
@@ -1168,6 +1169,59 @@ export function toggleWireframe() {
 }
 
 export async function handleSaveStl(event, filePath) {
+	
+	async function innerSave(ext,content){
+		try {
+		
+        	let finalPath = filePath;
+	        //const ext = window.exportExt || '.stl';
+	        if (!finalPath.toLowerCase().endsWith(ext)) finalPath += ext;
+	        
+	        //const content = window.stlToSave;
+			
+	        await api.saveFile(finalPath, content);
+	        alert(`Exported successfully to: ${finalPath}`);
+			
+		} catch (error) {
+        	alert(`Failed to save export: ${error.message}`);
+		}
+		closeModal('save-stl-modal');
+	}
+	
+	
+	
+	const exportGroup = new THREE.Group()
+    currentObjects.forEach((obj) => {
+        if (obj.isMesh || obj instanceof Brush) exportGroup.add(obj.clone())
+    })
+	exportGroup.scale.set(0.001,0.001,0.001)
+	exportGroup.rotation.x=-Math.PI/2
+	
+	
+	// Check the auto-saved format
+    const format = (globalThis.settings && globalThis.settings.exportFormat) || 'stl';
+	
+	
+    if (format === 'glb') {
+        gltfExporter.parse(exportGroup, async(result)=>{
+			
+			//window.stlToSave= result
+			await innerSave('.glb', JSON.stringify(result));
+		}, {binary:true});
+		
+        //window.exportExt = '.glb';
+    } else {
+        //window.stlToSave = exporter.parse(exportGroup, { binary: true });
+        //window.exportExt = '.stl';
+		await innerSave('.stl', exporter.parse(exportGroup, { binary: true })  )
+    }
+	
+	//*/
+	
+}
+
+/*
+export async function handleSaveStl(event, filePath) {
     try {
         let finalPath = filePath
         if (!finalPath.toLowerCase().endsWith('.stl')) finalPath += '.stl'
@@ -1182,18 +1236,39 @@ export async function handleSaveStl(event, filePath) {
     }
     closeModal('save-stl-modal')
 }
+//*/
 
 export function exportSTL() {
     if (!currentObjects.length) {
         alert('No objects to export!')
         return
     }
+	
+	/*
     const exportGroup = new THREE.Group()
     currentObjects.forEach((obj) => {
         if (obj.isMesh || obj instanceof Brush) exportGroup.add(obj.clone())
     })
-    window.stlToSave = exporter.parse(exportGroup, { binary: false })
-    openModal('save-stl-modal')
+	
+	
+	// Check the auto-saved format
+    const format = (globalThis.settings && globalThis.settings.exportFormat) || 'stl';
+	
+	
+    if (format === 'glb') {
+        gltfExporter.parse(exportGroup,(result)=>{
+			//PrintLog(result)
+			window.stlToSave= result
+		}, {binary:true});
+		
+        window.exportExt = '.glb';
+    } else {
+        window.stlToSave = exporter.parse(exportGroup, { binary: true });
+        window.exportExt = '.stl';
+    }
+	//*/
+
+   openModal('save-stl-modal')
 }
 
 export function clearAllCache() {

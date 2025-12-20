@@ -680,9 +680,10 @@ export function createPickerDOM(originalClass, originalId, initialPath) {
                     <thead>
                         <tr>
                             <th></th>
+							<th><input type="checkbox" class="file-picker-select-all-checkbox" title="Select All"></th>
                             <th>Name</th>
                             <th>Size</th>
-                            <th><input type="checkbox" class="file-picker-select-all-checkbox" title="Select All"></th>
+                           
                         </tr>
                     </thead>
                     <tbody>
