@@ -1,0 +1,15 @@
+{
+  "csgCode": [
+    {
+      "title": "Main",
+      "content": "var h= await importStl(\"Clone_Trooper_Helmet_Phase_2_v3.stl\")\n//TrooperHD_FULLHELMET.stl\n//var h= await importStl(\"TrooperHD_FULLHELMET.stl\")\n\n\n\n\n\nvar s= color(0xff00ff00,sphere({d:172}));\nalign({cx:0, cy:0, bz:0},h);\nalign({cx:0, cy:30, bz:0},s);\n\nscaleTo({x:300}, h);\n\n\nvar c= align({cx:0,cy:0,bz:150},\n\tcube([500,500, 500])\n\t)\n\n\nreturn h //difference(h,c)\n\n\n\n\n"
+    }
+  ],
+  "editorCode": [
+    {
+      "title": "Code",
+      "content": "// Include helper functions here"
+    }
+  ],
+  "meshCache": {}
+}

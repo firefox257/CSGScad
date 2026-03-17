@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Browser Storage Quota</title>
+   <script src="https://cdn.tailwindcss.com"></script>
+   <style>
+       /* Custom font import for aesthetics */
+       @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+       body {
+           font-family: 'Inter', sans-serif;
+           background-color: #f4f7f9;
+       }
+   </style>
+</head>
+<body class="p-4 sm:p-8 flex items-center justify-center min-h-screen">
+
+   <div id="storage-card" class="bg-white p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-lg transition-all duration-300">
+       <h1 class="text-3xl font-bold text-gray-800 mb-6 flex items-center">
+           <svg class="w-8 h-8 mr-3 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10h16V7a2 2 0 00-2-2H6a2 2 0 00-2 2zM9 13h6m-3-3v6"></path>
+           </svg>
+           Storage Quota Monitor
+       </h1>
+       
+       <div id="loading" class="text-center py-8">
+           <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mx-auto mb-4"></div>
+           <p class="text-gray-500">Calculating storage limits...</p>
+       </div>
+
+       <div id="results" class="space-y-4 hidden">
+           <!-- Data will be injected here -->
+       </div>
+       
+       <div id="error-message" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-6" role="alert">
+           <strong class="font-bold">Error:</strong>
+           <span class="block sm:inline" id="error-text"></span>
+       </div>
+
+       <p class="text-sm text-gray-400 mt-6 text-center">
+           This data includes all persistent storage (IndexedDB, Cache API, etc.) for this origin.
+       </p>
+
+   </div>
+
+   <script>
+       // Use a standard function to convert bytes to a human-readable format
+       function formatBytes(bytes) {
+           if (bytes === 0) return '0 Bytes';
+           const k = 1024;
+           const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+           const i = Math.floor(Math.log(bytes) / Math.log(k));
+           return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+       }
+
+       function createResultItem(label, value, color) {
+           return `
+               <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                   <span class="text-gray-600 font-medium">${label}:</span>
+                   <span class="text-lg font-semibold ${color}">${value}</span>
+               </div>
+           `;
+       }
+
+       async function displayStorageEstimate() {
+           const loadingElement = document.getElementById('loading');
+           const resultsElement = document.getElementById('results');
+           const errorElement = document.getElementById('error-message');
+           const errorText = document.getElementById('error-text');
+
+           loadingElement.classList.remove('hidden');
+           resultsElement.classList.add('hidden');
+           errorElement.classList.add('hidden');
+
+           // 1. Check for API support
+           if (!navigator.storage || !navigator.storage.estimate) {
+               errorText.textContent = 'StorageManager API is not supported in this browser.';
+               errorElement.classList.remove('hidden');
+               loadingElement.classList.add('hidden');
+               return;
+           }
+
+           try {
+               // 2. Get the estimate
+               const estimate = await navigator.storage.estimate();
+
+               const usage = estimate.usage;
+               const quota = estimate.quota;
+
+               // 3. Calculate metrics
+               const available = quota - usage;
+               const percentageUsed = ((usage / quota) * 100).toFixed(2);
+               
+               // Determine color for the usage percentage
+               let percentageColor = 'text-green-600';
+               if (percentageUsed >= 50) {
+                   percentageColor = 'text-yellow-600';
+               }
+               if (percentageUsed >= 80) {
+                   percentageColor = 'text-red-600';
+               }
+
+               // 4. Build HTML
+               let html = '';
+               html += createResultItem('Total Quota', formatBytes(quota), 'text-indigo-600');
+               html += createResultItem('Used Storage', formatBytes(usage), 'text-gray-800');
+               html += createResultItem('Available Space', formatBytes(available), 'text-indigo-600');
+               html += createResultItem('Quota Used', `${percentageUsed}%`, percentageColor);
+
+               // 5. Update DOM
+               resultsElement.innerHTML = html;
+               resultsElement.classList.remove('hidden');
+               loadingElement.classList.add('hidden');
+
+           } catch (error) {
+               console.error("Error fetching storage estimate:", error);
+               errorText.textContent = 'Could not retrieve storage data. See console for details.';
+               errorElement.classList.remove('hidden');
+               loadingElement.classList.add('hidden');
+           }
+       }
+
+       // Run the function when the page loads
+       displayStorageEstimate();
+
+   </script>
+</body>
+</html>

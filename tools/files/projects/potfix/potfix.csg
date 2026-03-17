@@ -1,0 +1,19 @@
+{
+  "csgCode": [
+    {
+      "title": "Main",
+      "content": "\nvar s = 2.5*inch;\nvar m = await importStl(\"./mando.stl\");\nscaleTo({x:2*inch}, m);\n\nvar c1 = cylinder({d:1/4*inch+0.5, h:3/4*inch})\nvar c2 = cylinder({dt:0, db:1/4*inch+0.5, h:1/8*inch})\nplacement({ccx:0,ccy:0,tbz:-0.001},c1,c2);\n\nvar c=union(c1,c2)\nvar n= cylinder({d:0.5*inch, h:0.1535*inch+0.1, fn:6})\n\nalign({cx:0,cy:0, bz:-0.0001},c);\nalign({cx:0,cy:0,bz:0},m)\nalign({cx:0, cy:0, bz:3},n);\n\n\nreturn difference(m, c, n);\n\n\n"
+    },
+    {
+      "title": "Untitled 2",
+      "content": "\n\nvar m= await importStl(\"./mandofix1.stl\");\n\nscaleTo({z:50},m);\nalign({cx:0,cy:0,bz:0},m);\n\nvar m1= convexHull(m);\nscaleAdd({z:-2,x:-2,y:-2},m1);\n\nreturn union(m1,m);\n\n\n\n\n\n"
+    }
+  ],
+  "editorCode": [
+    {
+      "title": "Code",
+      "content": "// Include helper functions here"
+    }
+  ],
+  "meshCache": {}
+}

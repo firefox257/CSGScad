@@ -1,0 +1,89 @@
+{
+  "csgCode": [
+    {
+      "title": "CSG Script",
+      "content": "\n\n\n\n\n\nreturn await get(\"obj1\", \"./lib1.csg\");"
+    }
+  ],
+  "editorCode": [
+    {
+      "title": "Editor Script",
+      "content": "// Place reusable functions and objects here. // Access from\n                    CSG Script with include(\"page name\"); /* var constants = {\n                    PI: Math.PI, E: Math.E }; return { constants }; */"
+    }
+  ],
+  "meshCache": {
+    "CSG Script": {
+      "mesh": {
+        "metadata": {
+          "version": 4.7,
+          "type": "Object",
+          "generator": "Object3D.toJSON"
+        },
+        "geometries": [
+          {
+            "uuid": "90033597-fbcd-45ee-bc48-1a39597217f2",
+            "type": "SphereGeometry",
+            "radius": 10,
+            "widthSegments": 50,
+            "heightSegments": 50,
+            "phiStart": 0,
+            "phiLength": 6.283185307179586,
+            "thetaStart": 0,
+            "thetaLength": 3.141592653589793
+          }
+        ],
+        "materials": [
+          {
+            "uuid": "25b434fa-55d8-4e3a-a091-ff4ca92c8447",
+            "type": "MeshStandardMaterial",
+            "color": 16763904,
+            "roughness": 0.6,
+            "metalness": 0.2,
+            "emissive": 0,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "envMapIntensity": 1,
+            "side": 2,
+            "blendColor": 0,
+            "flatShading": true
+          }
+        ],
+        "object": {
+          "uuid": "9cefbab4-efb9-4e42-86f3-986dc59b0e7d",
+          "type": "Mesh",
+          "layers": 1,
+          "matrix": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1
+          ],
+          "up": [
+            0,
+            1,
+            0
+          ],
+          "geometry": "90033597-fbcd-45ee-bc48-1a39597217f2",
+          "material": "25b434fa-55d8-4e3a-a091-ff4ca92c8447"
+        }
+      },
+      "updated": true
+    }
+  }
+}
