@@ -719,7 +719,7 @@ function webHandler(req, res) {
 		return;
 		case "cp":
 		if (req.method === 'POST' || req.method === 'PUT') {
-		handleCopy(res, es, req.headers['x-src'], req.headers['x-dst']);
+		handleCopy(res, req.headers['x-src'], req.headers['x-dst']);
 		} else {
 		sendPlainTextResponse(res, 'COPY requires POST or PUT method.', 405);
 		}
@@ -744,99 +744,6 @@ function webHandler(req, res) {
 		
 		}
 	}
-	/*
-    const lsPath = req.headers['x-ls-path'];
-    const readFileHeader = req.headers['x-read-file'];
-    const readFileBinaryHeader = req.headers['x-read-file-binary'];
-    const saveFileHeader = req.headers['x-save-file'];
-    const mkPathHeader = req.headers['x-mkpath'];
-    const mvSourceHeader = req.headers['x-mv-source'];
-    const mvDestinationHeader = req.headers['x-mv-destination'];
-    const delPathHeader = req.headers['x-del-path'];
-    const copySourceHeader = req.headers['x-copy-source'];
-    const copyDestinationHeader = req.headers['x-copy-destination'];
-    const rnSourceHeader = req.headers['x-rn-source'];
-    const rnDestinationHeader = req.headers['x-rn-destination'];
-
-
-    if (lsPath) {
-        handleLs(res, lsPath);
-        return;
-    }
-
-    if (readFileHeader) {
-        handleReadFile(res, readFileHeader);
-        return;
-    }
-    
-    if (readFileBinaryHeader) {
-        handleReadFileBinary(req, res, readFileBinaryHeader);
-        return;
-    }
-
-    if (saveFileHeader) {
-        if (req.method === 'POST' || req.method === 'PUT') {
-            handleSaveFile(req, res, saveFileHeader);
-        } else {
-            sendPlainTextResponse(res, 'SAVEFILE requires POST or PUT method.', 405);
-        }
-        return;
-    }
-
-    if (mkPathHeader) {
-        if (req.method === 'POST' || req.method === 'PUT') {
-            handleMkpath(res, mkPathHeader);
-        } else {
-            sendPlainTextResponse(res, 'MKPATH requires POST or PUT method.', 405);
-        }
-        return;
-    }
-
-    if (mvSourceHeader && mvDestinationHeader) {
-        if (req.method === 'POST' || req.method === 'PUT') {
-            handleMv(res, mvSourceHeader, mvDestinationHeader);
-        } else {
-            sendPlainTextResponse(res, 'MV requires POST or PUT method.', 405);
-        }
-        return;
-    } else if (mvSourceHeader || mvDestinationHeader) {
-        sendPlainTextResponse(res, 'Both X-MV-Source and X-MV-Destination headers are required for MV operation.', 400);
-        return;
-    }
-
-    if (copySourceHeader && copyDestinationHeader) {
-        if (req.method === 'POST' || req.method === 'PUT') {
-            handleCopy(res, copySourceHeader, copyDestinationHeader);
-        } else {
-            sendPlainTextResponse(res, 'COPY requires POST or PUT method.', 405);
-        }
-        return;
-    } else if (copySourceHeader || copyDestinationHeader) {
-        sendPlainTextResponse(res, 'Both X-COPY-Source and X-COPY-Destination headers are required for COPY operation.', 400);
-        return;
-    }
-
-    if (rnSourceHeader && rnDestinationHeader) {
-        if (req.method === 'POST' || req.method === 'PUT') {
-            handleRn(res, rnSourceHeader, rnDestinationHeader);
-        } else {
-            sendPlainTextResponse(res, 'RN requires POST or PUT method.', 405);
-        }
-        return;
-    } else if (rnSourceHeader || rnDestinationHeader) {
-        sendPlainTextResponse(res, 'Both X-RN-Source and X-RN-Destination headers are required for RN operation.', 400);
-        return;
-    }
-
-    if (delPathHeader) {
-        if (req.method === 'DELETE') {
-            handleDel(res, delPathHeader);
-        } else {
-            sendPlainTextResponse(res, 'DEL requires DELETE method.', 405);
-        }
-        return;
-    }
-	//*/
 
     if (pathname.endsWith('.api.js')) {
         const apiName = path.basename(pathname, '.api.js');
